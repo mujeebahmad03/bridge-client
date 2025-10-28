@@ -150,7 +150,7 @@ export const SignUpForm = () => {
             <CheckboxFormField
               form={form}
               name="marketingEmails"
-              label="I'd like to receive marketing emails about Onchain Suite
+              label="I'd like to receive marketing emails about Bridge
                       updates and features"
             />
           </motion.div>
