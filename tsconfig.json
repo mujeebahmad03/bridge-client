@@ -23,6 +23,7 @@
       "@/onboarding/*": ["./src/features/onboarding/*"],
       "@/ui/*": ["./src/shared/components/ui/*"],
       "@/components/*": ["./src/shared/components/*"],
+      "@/config/*": ["./src/shared/config/*"],
       "@/*": ["./src/*"]
     }
   },
