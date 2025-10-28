@@ -6,7 +6,23 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint .",
+    "prettier": "prettier --check .",
+    "prettier:fix": "prettier --write .",
+    "type-check": "tsc --noEmit",
+    "commit": "cz",
+    "prepare": "husky",
+    "pre-commit": "lint-staged",
+    "pre-push": "bun run lint && bun run build",
+    "validate": "bun run type-check && bun run lint && bun run prettier",
+    "rename:kebab-files": "find . -name '*.ts' -o -name '*.tsx' | grep -v node_modules | grep -v .next | grep -v .git | while read file; do newname=$(echo \"$file\" | sed 's/\\([A-Z]\\)/-\\L\\1/g' | sed 's/^-//' | sed 's/\\/-/-/g'); [ \"$file\" != \"$newname\" ] && mv \"$file\" \"$newname\" 2>/dev/null || true; done",
+    "rename:kebab-dirs": "find . -type d \\( -path './node_modules' -o -path './.next' -o -path './.git' \\) -prune -o -type d -print | grep -E '[A-Z]' | sort -r | while read dir; do newdir=$(echo \"$dir\" | sed 's|/\\([A-Z]\\)|/-\\L\\1|g' | sed 's|^-||' | sed 's|/-|/|g'); [ \"$dir\" != \"$newdir\" ] && mv \"$dir\" \"$newdir\" 2>/dev/null || true; done",
+    "rename:kebab-all": "npm run rename:kebab-dirs && npm run rename:kebab-files",
+    "imports:check": "eslint . --no-fix --rule 'no-restricted-imports: [error, { patterns: [{ group: [../*], message: Use absolute imports with @/ instead of relative parent imports (../) }] }]'",
+    "imports:fix": "eslint . --fix",
+    "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,md,yml,yaml,css,scss,html}\"",
+    "lint:fix": "eslint . --fix",
+    "check-all": "npm run lint && npm run format"
   },
   "dependencies": {
     "react": "19.2.0",
@@ -14,14 +30,39 @@
     "next": "16.0.0"
   },
   "devDependencies": {
+    "@commitlint/cli": "^20.1.0",
+    "@commitlint/config-conventional": "^20.0.0",
     "babel-plugin-react-compiler": "1.0.0",
-    "typescript": "^5",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "@tailwindcss/postcss": "^4",
-    "tailwindcss": "^4",
-    "eslint": "^9",
-    "eslint-config-next": "16.0.0"
+    "@types/node": "^20.19.23",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "@tailwindcss/postcss": "^4.1.16",
+    "@typescript-eslint/eslint-plugin": "^8.46.2",
+    "@typescript-eslint/parser": "^8.46.2",
+    "commitizen": "^4.3.1",
+    "cz-conventional-changelog": "^3.3.0",
+    "eslint": "^9.38.0",
+    "eslint-config-next": "16.0.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-check-file": "^3.3.0",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-simple-import-sort": "^12.1.1",
+    "eslint-plugin-unused-imports": "^4.3.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.6",
+    "prettier": "^3.6.2",
+    "tailwindcss": "^4.1.16",
+    "tsx": "^4.20.6",
+    "tw-animate-css": "^1.4.0",
+    "typescript": "^5.9.3"
+  },
+  "config": {
+    "commitizen": {
+      "path": "cz-conventional-changelog"
+    }
   }
 }
