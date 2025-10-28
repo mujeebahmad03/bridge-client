@@ -19,6 +19,10 @@
       }
     ],
     "paths": {
+      "@/auth/*": ["./src/features/auth/*"],
+      "@/onboarding/*": ["./src/features/onboarding/*"],
+      "@/ui/*": ["./src/shared/components/ui/*"],
+      "@/components/*": ["./src/shared/components/*"],
       "@/*": ["./src/*"]
     }
   },
