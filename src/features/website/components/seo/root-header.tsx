@@ -21,25 +21,25 @@ const RootHeader = () => {
         dangerouslySetInnerHTML={{
           __html: `
             @font-face {
-              font-family: 'Montserrat';
+              font-family: 'Inter';
               font-style: normal;
               font-weight: 400;
               font-display: swap;
-              src: url('https://fonts.gstatic.com/s/montserrat/v25/JTUSjIg1_i6t8kCHKm459WlhyyTh89Y.woff2') format('woff2');
+              src: url('https://fonts.gstatic.com/s/inter/v25/JTUSjIg1_i6t8kCHKm459WlhyyTh89Y.woff2') format('woff2');
             }
             @font-face {
-              font-family: 'Montserrat';
+              font-family: 'Inter';
               font-style: normal;
               font-weight: 600;
               font-display: swap;
-              src: url('https://fonts.gstatic.com/s/montserrat/v25/JTUSjIg1_i6t8kCHKm459WdhyyTh89Y.woff2') format('woff2');
+              src: url('https://fonts.gstatic.com/s/inter/v25/JTUSjIg1_i6t8kCHKm459WdhyyTh89Y.woff2') format('woff2');
             }
             @font-face {
-              font-family: 'Montserrat';
+              font-family: 'Inter';
               font-style: normal;
               font-weight: 700;
               font-display: swap;
-              src: url('https://fonts.gstatic.com/s/montserrat/v25/JTUSjIg1_i6t8kCHKm459WZhyyTh89Y.woff2') format('woff2');
+              src: url('https://fonts.gstatic.com/s/inter/v25/JTUSjIg1_i6t8kCHKm459WZhyyTh89Y.woff2') format('woff2');
             }
           `,
         }}
