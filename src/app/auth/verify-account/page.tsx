@@ -1,5 +1,7 @@
+import { VerifyAccountForm } from "@/auth/components";
+
 const VerifyAccountPage = () => {
-  return <div />;
+  return <VerifyAccountForm />;
 };
 
 export default VerifyAccountPage;

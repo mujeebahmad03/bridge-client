@@ -32,10 +32,11 @@ export function transformToSignUpApiPayload(
 }
 
 export function transformToOtpApiPayload(
+  email: string,
   formData: VerifyAccountFormData
 ): ApiVerifyOtpPayload {
   return {
-    email_address: formData.email,
+    email_address: email,
     otp_code: formData.otp,
   };
 }

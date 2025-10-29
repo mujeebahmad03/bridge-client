@@ -41,13 +41,13 @@ export function LoadingButton({
             repeat: Number.POSITIVE_INFINITY,
             ease: "linear",
           }}
-          className="h-5 w-5 rounded-full border-2 border-white border-t-transparent"
+          className="w-5 h-5 border-2 border-white rounded-full border-t-transparent"
         />
       ) : (
         <>
-          {loadingText ?? children}
+          {isLoading && loadingText ? loadingText : children}
           {!isLoading && (
-            <Icon className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+            <Icon className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" />
           )}
         </>
       )}

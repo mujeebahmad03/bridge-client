@@ -118,8 +118,11 @@ class AuthService {
    * Verify account with OTP
    * Automatically stores tokens and returns user data
    */
-  async verifyAccount(data: VerifyAccountFormData): Promise<User> {
-    const transformedData = transformToOtpApiPayload(data);
+  async verifyAccount(
+    email: string,
+    data: VerifyAccountFormData
+  ): Promise<User> {
+    const transformedData = transformToOtpApiPayload(email, data);
 
     const response = await apiClient.post<VerificationResponse>(
       API_ROUTES.AUTH.VERIFY_ACCOUNT,

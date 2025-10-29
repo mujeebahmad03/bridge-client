@@ -67,8 +67,13 @@ export function useAuth() {
 
   // Mutation: Verify account
   const verifyAccountMutation = useMutation({
-    mutationFn: (data: VerifyAccountFormData) =>
-      authService.verifyAccount(data),
+    mutationFn: ({
+      email,
+      data,
+    }: {
+      email: string;
+      data: VerifyAccountFormData;
+    }) => authService.verifyAccount(email, data),
     onSuccess: async (userData) => {
       toast.success("Account verified successfully!");
       // Update auth state

@@ -66,7 +66,6 @@ export const resetPasswordSchema = z
   });
 
 export const verifyAccountSchema = z.object({
-  email: emailSchema,
   otp: otpSchema,
 });
 

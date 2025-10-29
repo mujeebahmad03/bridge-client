@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Link from "next/link";
 import { type ReactNode } from "react";
 
 import { Logo } from "@/components/common";
@@ -38,7 +39,9 @@ export const AuthLayout = ({ children }: AuthLayoutProps) => {
             transition={{ delay: 0.2 }}
             className="flex items-center gap-2 mb-12"
           >
-            <Logo className="size-24 text-sidebar-foreground" />
+            <Link href="/">
+              <Logo className="size-24 text-sidebar-foreground" />
+            </Link>
           </motion.div>
 
           {/* Main Content */}
