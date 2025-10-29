@@ -21,6 +21,7 @@
     "paths": {
       "@/auth/*": ["./src/features/auth/*"],
       "@/onboarding/*": ["./src/features/onboarding/*"],
+      "@/website/*": ["./src/features/website/*"],
       "@/ui/*": ["./src/shared/components/ui/*"],
       "@/components/*": ["./src/shared/components/*"],
       "@/hooks/*": ["./src/shared/hooks/*"],
