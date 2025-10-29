@@ -22,6 +22,8 @@ export const nameSchema = z
   .min(2, "Must be at least 2 characters")
   .max(50, "Must be less than 50 characters");
 
+const otpSchema = z.string().length(6, "OTP must be 6 digits");
+
 // Sign In Schema
 export const signInSchema = z.object({
   email: emailSchema,
@@ -56,14 +58,21 @@ export const resetPasswordSchema = z
   .object({
     password: passwordSchema,
     confirmPassword: z.string().min(1, "Please confirm your password"),
+    otp: z.string().length(6, "OTP is required"),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
     path: ["confirmPassword"],
   });
 
+export const verifyAccountSchema = z.object({
+  email: emailSchema,
+  otp: otpSchema,
+});
+
 // Type exports
 export type SignInFormData = z.infer<typeof signInSchema>;
 export type SignUpFormData = z.infer<typeof signUpSchema>;
 export type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;
 export type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
+export type VerifyAccountFormData = z.infer<typeof verifyAccountSchema>;

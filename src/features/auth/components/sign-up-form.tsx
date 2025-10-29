@@ -7,13 +7,16 @@ import Link from "next/link";
 import { useForm, useWatch } from "react-hook-form";
 
 import { CheckboxFormField, InputFormField } from "@/components/form-fields";
-import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
+import { LoadingButton } from "@/ui/loading-button";
 
 import { AUTH_ROUTES } from "@/config/app-route";
+import { useAuth, useGuestOnly } from "@/hooks/use-auth";
+import { useLocalStorage } from "@/hooks/use-local-storage";
 
 import {
+  ErrorResponse,
   OAuthButtons,
   PasswordField,
   PasswordStrengthIndicator,
@@ -22,6 +25,14 @@ import { containerVariants, itemVariants } from "@/auth/config";
 import { type SignUpFormData, signUpSchema } from "@/auth/validations";
 
 export const SignUpForm = () => {
+  useGuestOnly();
+  const { signUp, isSigningUp, signUpError } = useAuth();
+
+  const { setValue } = useLocalStorage<{ email: string } | null>(
+    "emailForVerification",
+    null
+  );
+
   const form = useForm<SignUpFormData>({
     resolver: zodResolver(signUpSchema),
     defaultValues: {
@@ -39,15 +50,19 @@ export const SignUpForm = () => {
     name: "password",
   });
 
-  const onSubmit = (data: SignUpFormData) => {
-    console.log(data);
-    // Handle sign up logic here
+  const onSubmit = async (data: SignUpFormData) => {
+    try {
+      await signUp(data);
+      setValue({ email: data.email });
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   return (
     <motion.div variants={containerVariants} initial="hidden" animate="visible">
       <motion.div variants={itemVariants} className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground mb-2">
+        <h1 className="mb-2 text-3xl font-bold text-foreground">
           Create your account
         </h1>
         <p className="text-muted-foreground">
@@ -55,13 +70,15 @@ export const SignUpForm = () => {
         </p>
       </motion.div>
 
-      <motion.div variants={itemVariants} className="space-y-3 mb-6">
+      {signUpError && <ErrorResponse error={signUpError} />}
+
+      <motion.div variants={itemVariants} className="mb-6 space-y-3">
         <OAuthButtons />
       </motion.div>
 
       <motion.div variants={itemVariants} className="relative mb-6">
         <Separator />
-        <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-background px-2 text-xs text-muted-foreground">
+        <span className="absolute px-2 text-xs -translate-x-1/2 -translate-y-1/2 left-1/2 top-1/2 bg-background text-muted-foreground">
           Or continue with email
         </span>
       </motion.div>
@@ -156,19 +173,23 @@ export const SignUpForm = () => {
           </motion.div>
 
           <motion.div variants={itemVariants}>
-            <Button type="submit" className="w-full h-12 text-base">
+            <LoadingButton
+              isLoading={isSigningUp}
+              disabled={isSigningUp}
+              loadingText="Creating Account..."
+            >
               Create account
-            </Button>
+            </LoadingButton>
           </motion.div>
 
           <motion.p
             variants={itemVariants}
-            className="text-center text-sm text-muted-foreground"
+            className="text-sm text-center text-muted-foreground"
           >
             Already have an account?{" "}
             <Link
               href={AUTH_ROUTES.LOGIN}
-              className="text-primary font-medium hover:underline"
+              className="font-medium text-primary hover:underline"
             >
               Sign in
             </Link>

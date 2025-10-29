@@ -7,11 +7,14 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 
 import { InputFormField } from "@/components/form-fields";
-import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
+import { LoadingButton } from "@/ui/loading-button";
 
 import { AUTH_ROUTES } from "@/config/app-route";
+import { useAuth, useGuestOnly } from "@/hooks/use-auth";
+import { useLocalStorage } from "@/hooks/use-local-storage";
 
+import { ErrorResponse } from "./shared";
 import { containerVariants, itemVariants } from "@/auth/config";
 import {
   type ForgotPasswordFormData,
@@ -19,6 +22,13 @@ import {
 } from "@/auth/validations";
 
 export const ForgotPasswordForm = () => {
+  useGuestOnly();
+  const { forgotPassword, isSendingResetOTP, forgotPasswordError } = useAuth();
+  const { setValue } = useLocalStorage<{ email: string } | null>(
+    "emailForPasswordReset",
+    null
+  );
+
   const form = useForm<ForgotPasswordFormData>({
     resolver: zodResolver(forgotPasswordSchema),
     defaultValues: {
@@ -26,9 +36,13 @@ export const ForgotPasswordForm = () => {
     },
   });
 
-  const onSubmit = (data: ForgotPasswordFormData) => {
-    console.log(data);
-    // Handle password reset logic here
+  const onSubmit = async (data: ForgotPasswordFormData) => {
+    try {
+      await forgotPassword(data);
+      setValue({ email: data.email });
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   return (
@@ -36,12 +50,12 @@ export const ForgotPasswordForm = () => {
       <motion.div variants={itemVariants} className="mb-8">
         <Link
           href={AUTH_ROUTES.LOGIN}
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
+          className="inline-flex items-center gap-2 mb-6 text-sm transition-colors text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to login
         </Link>
-        <h1 className="text-3xl font-bold text-foreground mb-2">
+        <h1 className="mb-2 text-3xl font-bold text-foreground">
           Reset your password
         </h1>
         <p className="text-muted-foreground">
@@ -49,6 +63,8 @@ export const ForgotPasswordForm = () => {
           password
         </p>
       </motion.div>
+
+      {forgotPasswordError && <ErrorResponse error={forgotPasswordError} />}
 
       <Form {...form}>
         <motion.form
@@ -69,19 +85,23 @@ export const ForgotPasswordForm = () => {
           </motion.div>
 
           <motion.div variants={itemVariants}>
-            <Button type="submit" className="w-full h-12 text-base">
-              Send reset link
-            </Button>
+            <LoadingButton
+              isLoading={isSendingResetOTP}
+              disabled={isSendingResetOTP}
+              loadingText="Sending reset OTP..."
+            >
+              Send reset OTP
+            </LoadingButton>
           </motion.div>
 
           <motion.p
             variants={itemVariants}
-            className="text-center text-sm text-muted-foreground"
+            className="text-sm text-center text-muted-foreground"
           >
             Remember your password?{" "}
             <Link
               href={AUTH_ROUTES.LOGIN}
-              className="text-primary font-medium hover:underline"
+              className="font-medium text-primary hover:underline"
             >
               Sign in
             </Link>

@@ -23,12 +23,15 @@
       "@/onboarding/*": ["./src/features/onboarding/*"],
       "@/ui/*": ["./src/shared/components/ui/*"],
       "@/components/*": ["./src/shared/components/*"],
+      "@/hooks/*": ["./src/shared/hooks/*"],
       "@/config/*": ["./src/shared/config/*"],
+      "@/types/*": ["./src/shared/types/*"],
       "@/*": ["./src/*"]
     }
   },
   "include": [
     "next-env.d.ts",
+    "src/shared/types/**/*.d.ts",
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",

@@ -1,9 +1,9 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Sparkles } from "lucide-react";
 import { type ReactNode } from "react";
 
+import { Logo } from "@/components/common";
 import { ThemeModeToggle } from "@/ui/theme-mode-toggle";
 
 interface AuthLayoutProps {
@@ -12,9 +12,9 @@ interface AuthLayoutProps {
 
 export const AuthLayout = ({ children }: AuthLayoutProps) => {
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row relative">
+    <div className="relative flex flex-col min-h-screen lg:flex-row">
       {/* Theme Toggle - Fixed Position */}
-      <div className="fixed top-6 right-6 z-50">
+      <div className="fixed z-50 top-6 right-6">
         <ThemeModeToggle />
       </div>
       {/* Left Panel - Brand Section */}
@@ -22,12 +22,12 @@ export const AuthLayout = ({ children }: AuthLayoutProps) => {
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.5 }}
-        className="hidden lg:flex lg:w-1/2 bg-linear-to-br from-primary via-primary-glow to-primary-dark p-12 flex-col justify-between text-white relative overflow-hidden"
+        className="relative flex-col justify-between hidden p-12 overflow-hidden text-white lg:flex lg:w-1/2 bg-linear-to-br from-primary via-primary-glow to-primary-dark"
       >
         {/* Decorative background elements */}
         <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-white rounded-full blur-3xl" />
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-white rounded-full blur-3xl" />
+          <div className="absolute bg-white rounded-full top-1/4 left-1/4 w-96 h-96 blur-3xl" />
+          <div className="absolute bg-white rounded-full bottom-1/4 right-1/4 w-96 h-96 blur-3xl" />
         </div>
 
         <div className="relative z-10">
@@ -38,10 +38,7 @@ export const AuthLayout = ({ children }: AuthLayoutProps) => {
             transition={{ delay: 0.2 }}
             className="flex items-center gap-2 mb-12"
           >
-            <div className="p-2 bg-white/10 rounded-lg backdrop-blur-sm">
-              <Sparkles className="w-6 h-6" />
-            </div>
-            <span className="text-2xl font-bold">Bridge</span>
+            <Logo className="size-24 text-sidebar-foreground" />
           </motion.div>
 
           {/* Main Content */}
@@ -51,10 +48,10 @@ export const AuthLayout = ({ children }: AuthLayoutProps) => {
             transition={{ delay: 0.3 }}
             className="max-w-md"
           >
-            <h1 className="text-5xl font-bold mb-6 leading-tight">
+            <h1 className="mb-6 text-5xl font-bold leading-tight">
               AI-Powered Sales Platform
             </h1>
-            <p className="text-lg text-white/90 leading-relaxed">
+            <p className="text-lg leading-relaxed text-white/90">
               Transform your sales process with intelligent insights, automated
               workflows, and data-driven decisions.
             </p>
@@ -68,20 +65,20 @@ export const AuthLayout = ({ children }: AuthLayoutProps) => {
           transition={{ delay: 0.4 }}
           className="relative z-10 flex gap-6 text-sm text-white/80"
         >
-          <a href="/privacy" className="hover:text-white transition-colors">
+          <a href="/privacy" className="transition-colors hover:text-white">
             Privacy
           </a>
-          <a href="/terms" className="hover:text-white transition-colors">
+          <a href="/terms" className="transition-colors hover:text-white">
             Terms
           </a>
-          <a href="/help" className="hover:text-white transition-colors">
+          <a href="/help" className="transition-colors hover:text-white">
             Help
           </a>
         </motion.div>
       </motion.div>
 
       {/* Right Panel - Form Section */}
-      <div className="flex-1 flex items-center justify-center p-6 lg:p-12 bg-background">
+      <div className="flex items-center justify-center flex-1 p-6 lg:p-12 bg-background">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -89,11 +86,8 @@ export const AuthLayout = ({ children }: AuthLayoutProps) => {
           className="w-full max-w-md"
         >
           {/* Mobile Logo */}
-          <div className="lg:hidden flex items-center gap-2 mb-8">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <Sparkles className="w-6 h-6 text-primary" />
-            </div>
-            <span className="text-2xl font-bold text-foreground">Bridge</span>
+          <div className="flex items-center gap-2 mb-8 lg:hidden">
+            <Logo className="size-24 text-sidebar-foreground" />
           </div>
 
           {children}

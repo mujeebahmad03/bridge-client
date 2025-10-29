@@ -7,17 +7,24 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 
 import { InputFormField } from "@/components/form-fields";
-import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
+import { LoadingButton } from "@/ui/loading-button";
 
 import { AUTH_ROUTES } from "@/config/app-route";
+import { useAuth, useGuestOnly } from "@/hooks/use-auth";
 
-import { OAuthButtons, PasswordField } from "@/auth/components/shared";
+import {
+  ErrorResponse,
+  OAuthButtons,
+  PasswordField,
+} from "@/auth/components/shared";
 import { containerVariants, itemVariants } from "@/auth/config";
 import { type SignInFormData, signInSchema } from "@/auth/validations";
 
 export const LoginForm = () => {
+  useGuestOnly();
+  const { signIn, isSigningIn, signInError } = useAuth();
   const form = useForm<SignInFormData>({
     resolver: zodResolver(signInSchema),
     defaultValues: {
@@ -26,27 +33,33 @@ export const LoginForm = () => {
     },
   });
 
-  const onSubmit = (data: SignInFormData) => {
-    console.log(data);
+  const onSubmit = async (data: SignInFormData) => {
+    try {
+      await signIn(data);
+    } catch (e) {
+      console.error(e);
+    }
     // Handle login logic here
   };
 
   return (
     <motion.div variants={containerVariants} initial="hidden" animate="visible">
       <motion.div variants={itemVariants} className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground mb-2">
+        <h1 className="mb-2 text-3xl font-bold text-foreground">
           Welcome back
         </h1>
         <p className="text-muted-foreground">Sign in to your Bridge account</p>
       </motion.div>
 
-      <motion.div variants={itemVariants} className="space-y-3 mb-6">
+      {signInError && <ErrorResponse error={signInError} />}
+
+      <motion.div variants={itemVariants} className="mb-6 space-y-3">
         <OAuthButtons />
       </motion.div>
 
       <motion.div variants={itemVariants} className="relative mb-6">
         <Separator />
-        <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-background px-2 text-xs text-muted-foreground">
+        <span className="absolute px-2 text-xs -translate-x-1/2 -translate-y-1/2 left-1/2 top-1/2 bg-background text-muted-foreground">
           Or continue with email
         </span>
       </motion.div>
@@ -78,26 +91,30 @@ export const LoginForm = () => {
             />
             <Link
               href={AUTH_ROUTES.FORGOT_PASSWORD}
-              className="text-sm text-primary hover:underline flex justify-end mt-2"
+              className="flex justify-end mt-2 text-sm text-primary hover:underline"
             >
               Forgot password?
             </Link>
           </motion.div>
 
           <motion.div variants={itemVariants}>
-            <Button type="submit" className="w-full h-12 text-base">
+            <LoadingButton
+              isLoading={isSigningIn}
+              disabled={isSigningIn}
+              loadingText="Signing in..."
+            >
               Sign in
-            </Button>
+            </LoadingButton>
           </motion.div>
 
           <motion.p
             variants={itemVariants}
-            className="text-center text-sm text-muted-foreground"
+            className="text-sm text-center text-muted-foreground"
           >
             Don&apos;t have an account?{" "}
             <Link
               href={AUTH_ROUTES.SIGN_UP}
-              className="text-primary font-medium hover:underline"
+              className="font-medium text-primary hover:underline"
             >
               Sign up
             </Link>
