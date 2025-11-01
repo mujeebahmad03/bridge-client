@@ -9,7 +9,11 @@ import axios, {
 
 import { API_ROUTES } from "@/config/api-routes";
 
-import { type ApiResponse, type TokenPair } from "@/types/api";
+import {
+  type ApiResponse,
+  type ErrorResponse,
+  type TokenPair,
+} from "@/types/api";
 
 import { env } from "./env";
 import { TokenStorage } from "./token-manager";
@@ -19,6 +23,8 @@ export class ApiError extends Error {
   constructor(
     public statusCode: number,
     public detail: string,
+    public code?: string,
+    public fields?: Record<string, string[]>,
     public originalError?: unknown
   ) {
     super(detail);
@@ -76,7 +82,7 @@ class ApiClient {
         this.logRequest(response.config, response);
         return response;
       },
-      async (error: AxiosError<ApiResponse>) => {
+      async (error: AxiosError<ApiResponse | ErrorResponse>) => {
         const originalRequest = error.config as InternalAxiosRequestConfig & {
           _retry?: boolean;
         };
@@ -176,7 +182,13 @@ class ApiClient {
         "Failed to refresh token"
       );
     } catch (error) {
-      throw new ApiError(401, "Token refresh failed", error);
+      throw new ApiError(
+        401,
+        "Token refresh failed",
+        undefined,
+        undefined,
+        error
+      );
     }
   }
 
@@ -328,30 +340,84 @@ class ApiClient {
     // });
   }
 
-  private transformError(error: AxiosError<ApiResponse>): ApiError {
+  private transformError(
+    error: AxiosError<ApiResponse | ErrorResponse>
+  ): ApiError {
     if (error.response?.data) {
-      const { status } = error.response.data;
-      const detail =
-        typeof status.detail === "string"
-          ? status.detail
-          : status.detail?.detail || "An error occurred";
+      const responseData = error.response.data;
 
-      return new ApiError(status.status_code, detail, error);
+      // Check if it's the new error format (direct ErrorResponse)
+      if ("success" in responseData && responseData.success === false) {
+        // Structured validation error format
+        const message = Array.isArray(responseData.message)
+          ? responseData.message[0]
+          : responseData.message;
+
+        return new ApiError(
+          responseData.statusCode,
+          message || "An error occurred",
+          responseData.error,
+          responseData.fields,
+          error
+        );
+      } else if (
+        "detail" in responseData &&
+        typeof responseData.detail === "string"
+      ) {
+        // Simple detail error format (with or without code)
+        const code =
+          "code" in responseData
+            ? (responseData as { detail: string; code: string }).code
+            : undefined;
+
+        return new ApiError(
+          error.response.status,
+          responseData.detail,
+          code,
+          undefined,
+          error
+        );
+      } else if ("status" in responseData) {
+        // Old wrapped format (ApiResponse with error)
+        const { status } = responseData as ApiResponse;
+        const detail =
+          typeof status.detail === "string"
+            ? status.detail
+            : "detail" in status.detail
+              ? status.detail.detail
+              : "An error occurred";
+
+        return new ApiError(
+          status.status_code,
+          detail,
+          undefined,
+          undefined,
+          error
+        );
+      }
     }
 
     if (error.code === "ECONNABORTED") {
-      return new ApiError(408, "Request timeout", error);
+      return new ApiError(408, "Request timeout", undefined, undefined, error);
     }
 
     if (error.code === "ERR_NETWORK") {
       return new ApiError(
         503,
         "Network error - please check your connection",
+        undefined,
+        undefined,
         error
       );
     }
 
-    return new ApiError(500, error.message || "Unknown error occurred", error);
+    return new ApiError(
+      500,
+      error.message || "Unknown error occurred",
+      undefined,
+      undefined,
+      error
+    );
   }
 
   // Generic request method with retry logic
@@ -387,7 +453,9 @@ class ApiClient {
       if (error instanceof ApiError) {
         throw error;
       }
-      throw this.transformError(error as AxiosError<ApiResponse>);
+      throw this.transformError(
+        error as AxiosError<ApiResponse | ErrorResponse>
+      );
     }
   }
 
@@ -475,7 +543,9 @@ class ApiClient {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(downloadUrl);
     } catch (error) {
-      throw this.transformError(error as AxiosError<ApiResponse>);
+      throw this.transformError(
+        error as AxiosError<ApiResponse | ErrorResponse>
+      );
     }
   }
 
