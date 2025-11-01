@@ -1,6 +1,6 @@
 import { API_ROUTES } from "@/config/api-routes";
 import { AUTH_ROUTES } from "@/config/app-route";
-import { apiClient } from "@/lib/api-client";
+import { apiClient, ApiError } from "@/lib/api-client";
 import { TokenStorage } from "@/lib/token-manager";
 
 import { type ApiResponse } from "@/types/api";
@@ -35,16 +35,25 @@ class AuthService {
   }
 
   /**
-   * Centralized error handler that extracts error message from response
+   * Centralized error handler that extracts error message from ApiError
    */
-  private handleError<T>(
-    response: ApiResponse<T>,
-    defaultMessage: string
-  ): never {
-    const detail = response.status?.detail;
-    const errorMessage =
-      typeof detail === "object" ? detail.detail : detail || defaultMessage;
-    throw new Error(errorMessage);
+  private handleApiError(error: unknown, defaultMessage: string): never {
+    if (error instanceof ApiError) {
+      // Handle field-level validation errors
+      if (error.fields) {
+        const fieldErrors = Object.entries(error.fields)
+          .map(([field, messages]) => `${field}: ${messages.join(", ")}`)
+          .join("; ");
+        throw new Error(fieldErrors || error.detail || defaultMessage);
+      }
+      throw new Error(error.detail || defaultMessage);
+    }
+
+    if (error instanceof Error) {
+      throw error;
+    }
+
+    throw new Error(defaultMessage);
   }
 
   /**
@@ -57,7 +66,9 @@ class AuthService {
     if (this.isSuccessResponse(response.status.status_code) && response.data) {
       return response.data;
     }
-    this.handleError(response, defaultErrorMessage);
+
+    // This shouldn't happen with the new error handling, but kept for safety
+    throw new Error(defaultErrorMessage);
   }
 
   /**
@@ -91,27 +102,31 @@ class AuthService {
    * Returns a message indicating OTP was sent to email
    */
   async signUp(data: SignUpFormData): Promise<SignUpResponse> {
-    const transformedData = transformToSignUpApiPayload(data);
+    try {
+      const transformedData = transformToSignUpApiPayload(data);
 
-    const response = await apiClient.post<string>(
-      API_ROUTES.AUTH.SIGN_UP,
-      transformedData
-    );
-
-    if (this.isSuccessResponse(response.status.status_code)) {
-      // Extract email from response message or use provided email
-      const emailMatch = response.data?.match(
-        /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/
+      const response = await apiClient.post<string>(
+        API_ROUTES.AUTH.SIGN_UP,
+        transformedData
       );
-      const email = emailMatch ? emailMatch[0] : data.email;
 
-      return {
-        message: response.data ?? "OTP sent successfully",
-        email,
-      };
+      if (this.isSuccessResponse(response.status.status_code)) {
+        // Extract email from response message or use provided email
+        const emailMatch = response.data?.match(
+          /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/
+        );
+        const email = emailMatch ? emailMatch[0] : data.email;
+
+        return {
+          message: response.data ?? "OTP sent successfully",
+          email,
+        };
+      }
+
+      throw new Error("Signup failed");
+    } catch (error) {
+      this.handleApiError(error, "Signup failed");
     }
-
-    this.handleError(response, "Signup failed");
   }
 
   /**
@@ -122,36 +137,44 @@ class AuthService {
     email: string,
     data: VerifyAccountFormData
   ): Promise<User> {
-    const transformedData = transformToOtpApiPayload(email, data);
+    try {
+      const transformedData = transformToOtpApiPayload(email, data);
 
-    const response = await apiClient.post<VerificationResponse>(
-      API_ROUTES.AUTH.VERIFY_ACCOUNT,
-      transformedData
-    );
+      const response = await apiClient.post<VerificationResponse>(
+        API_ROUTES.AUTH.VERIFY_ACCOUNT,
+        transformedData
+      );
 
-    const userData = this.validateResponse<VerificationResponse>(
-      response,
-      "Account verification failed"
-    );
+      const userData = this.validateResponse<VerificationResponse>(
+        response,
+        "Account verification failed"
+      );
 
-    await this.storeTokens(userData);
-    return this.extractUserData(userData);
+      await this.storeTokens(userData);
+      return this.extractUserData(userData);
+    } catch (error) {
+      this.handleApiError(error, "Account verification failed");
+    }
   }
 
   /**
    * Resend OTP to user's email
    */
   async resendOTP(data: ResendOTPData): Promise<string> {
-    const response = await apiClient.post<string>(
-      API_ROUTES.AUTH.RESEND_OTP,
-      data
-    );
+    try {
+      const response = await apiClient.post<string>(
+        API_ROUTES.AUTH.RESEND_OTP,
+        data
+      );
 
-    if (this.isSuccessResponse(response.status.status_code)) {
-      return response.data ?? "OTP resent successfully";
+      if (this.isSuccessResponse(response.status.status_code)) {
+        return response.data ?? "OTP resent successfully";
+      }
+
+      throw new Error("Failed to resend OTP");
+    } catch (error) {
+      this.handleApiError(error, "Failed to resend OTP");
     }
-
-    this.handleError(response, "Failed to resend OTP");
   }
 
   /**
@@ -159,18 +182,22 @@ class AuthService {
    * Automatically stores tokens and returns user data
    */
   async signIn(data: SignInFormData): Promise<void> {
-    const transformedData = transformToLoginApiPayload(data);
-    const response = await apiClient.post<LoginResponse>(
-      API_ROUTES.AUTH.LOGIN,
-      transformedData
-    );
+    try {
+      const transformedData = transformToLoginApiPayload(data);
+      const response = await apiClient.post<LoginResponse>(
+        API_ROUTES.AUTH.LOGIN,
+        transformedData
+      );
 
-    const loginData = this.validateResponse<LoginResponse>(
-      response,
-      "Sign in failed"
-    );
+      const loginData = this.validateResponse<LoginResponse>(
+        response,
+        "Sign in failed"
+      );
 
-    await this.storeTokens(loginData);
+      await this.storeTokens(loginData);
+    } catch (error) {
+      this.handleApiError(error, "Sign in failed");
+    }
   }
 
   /**
@@ -178,16 +205,20 @@ class AuthService {
    * Sends OTP to user's email
    */
   async forgotPassword(data: ForgotPasswordFormData): Promise<string> {
-    const response = await apiClient.post<string>(
-      API_ROUTES.AUTH.FORGOT_PASSWORD,
-      { email_address: data.email }
-    );
+    try {
+      const response = await apiClient.post<string>(
+        API_ROUTES.AUTH.FORGOT_PASSWORD,
+        { email_address: data.email }
+      );
 
-    if (this.isSuccessResponse(response.status.status_code)) {
-      return response.data ?? "Password reset OTP sent successfully";
+      if (this.isSuccessResponse(response.status.status_code)) {
+        return response.data ?? "Password reset OTP sent successfully";
+      }
+
+      throw new Error("Failed to send reset OTP");
+    } catch (error) {
+      this.handleApiError(error, "Failed to send reset OTP");
     }
-
-    this.handleError(response, "Failed to send reset OTP");
   }
 
   /**
@@ -197,17 +228,21 @@ class AuthService {
     email: string,
     data: ResetPasswordFormData
   ): Promise<string> {
-    const transformData = transformToResetPasswordApiPayload(email, data);
-    const response = await apiClient.post<string>(
-      API_ROUTES.AUTH.RESET_PASSWORD,
-      transformData
-    );
+    try {
+      const transformData = transformToResetPasswordApiPayload(email, data);
+      const response = await apiClient.post<string>(
+        API_ROUTES.AUTH.RESET_PASSWORD,
+        transformData
+      );
 
-    if (this.isSuccessResponse(response.status.status_code)) {
-      return response.data ?? "Password reset successful";
+      if (this.isSuccessResponse(response.status.status_code)) {
+        return response.data ?? "Password reset successful";
+      }
+
+      throw new Error("Password reset failed");
+    } catch (error) {
+      this.handleApiError(error, "Password reset failed");
     }
-
-    this.handleError(response, "Password reset failed");
   }
 
   /**
@@ -229,14 +264,18 @@ class AuthService {
   }
 
   async getCurrentUser(): Promise<User> {
-    const response = await apiClient.get<User>(API_ROUTES.USERS.PROFILE);
+    try {
+      const response = await apiClient.get<User>(API_ROUTES.USERS.PROFILE);
 
-    const userData = this.validateResponse<User>(
-      response,
-      "Failed to fetch current user"
-    );
+      const userData = this.validateResponse<User>(
+        response,
+        "Failed to fetch current user"
+      );
 
-    return this.extractUserData(userData);
+      return this.extractUserData(userData);
+    } catch (error) {
+      this.handleApiError(error, "Failed to fetch current user");
+    }
   }
 
   /**
