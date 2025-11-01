@@ -54,7 +54,7 @@ export const LoginForm = () => {
       {signInError && <ErrorResponse error={signInError} />}
 
       <motion.div variants={itemVariants} className="mb-6 space-y-3">
-        <OAuthButtons />
+        <OAuthButtons isLoading={isSigningIn} />
       </motion.div>
 
       <motion.div variants={itemVariants} className="relative mb-6">
