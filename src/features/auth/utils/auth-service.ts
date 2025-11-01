@@ -63,7 +63,7 @@ class AuthService {
     response: ApiResponse<T>,
     defaultErrorMessage: string
   ): T {
-    if (this.isSuccessResponse(response.status.status_code) && response.data) {
+    if (this.isSuccessResponse(response.status?.status_code) && response.data) {
       return response.data;
     }
 

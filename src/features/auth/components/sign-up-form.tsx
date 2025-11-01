@@ -21,12 +21,13 @@ import {
   PasswordField,
   PasswordStrengthIndicator,
 } from "./shared";
+import { SignUpSuccess } from "./sign-up-success";
 import { containerVariants, itemVariants } from "@/auth/config";
 import { type SignUpFormData, signUpSchema } from "@/auth/validations";
 
 export const SignUpForm = () => {
   useGuestOnly();
-  const { signUp, isSigningUp, signUpError } = useAuth();
+  const { signUp, isSigningUp, signUpError, signUpData } = useAuth();
 
   const { setValue } = useLocalStorage<{ email: string } | null>(
     "emailForVerification",
@@ -59,7 +60,9 @@ export const SignUpForm = () => {
     }
   };
 
-  return (
+  return signUpData ? (
+    <SignUpSuccess />
+  ) : (
     <motion.div variants={containerVariants} initial="hidden" animate="visible">
       <motion.div variants={itemVariants} className="mb-8">
         <h1 className="mb-2 text-3xl font-bold text-foreground">

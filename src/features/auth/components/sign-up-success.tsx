@@ -91,7 +91,14 @@ export const SignUpSuccess = () => {
           </button>
         </p>
 
-        <p className="pt-4 text-sm text-muted-foreground">
+        <p className="pt-4 flex flex-col gap-4 text-sm text-muted-foreground">
+          <Link
+            href={AUTH_ROUTES.VERIFY_ACCOUNT}
+            className="font-medium text-primary hover:underline"
+          >
+            Verify Account
+          </Link>
+
           <Link
             href={AUTH_ROUTES.LOGIN}
             className="font-medium text-primary hover:underline"
