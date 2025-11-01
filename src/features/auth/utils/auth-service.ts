@@ -3,7 +3,7 @@ import { AUTH_ROUTES } from "@/config/app-route";
 import { apiClient, ApiError } from "@/lib/api-client";
 import { TokenStorage } from "@/lib/token-manager";
 
-import { type ApiResponse } from "@/types/api";
+import { type ApiResponse, type TokenPair } from "@/types/api";
 
 import {
   type LoginResponse,
@@ -63,7 +63,7 @@ class AuthService {
     response: ApiResponse<T>,
     defaultErrorMessage: string
   ): T {
-    if (this.isSuccessResponse(response.status?.status_code) && response.data) {
+    if (this.isSuccessResponse(response.status.status_code) && response.data) {
       return response.data;
     }
 
@@ -184,17 +184,14 @@ class AuthService {
   async signIn(data: SignInFormData): Promise<void> {
     try {
       const transformedData = transformToLoginApiPayload(data);
-      const response = await apiClient.post<LoginResponse>(
+
+      // Login returns tokens directly, not wrapped in ApiResponse
+      const tokens = (await apiClient.post<TokenPair>(
         API_ROUTES.AUTH.LOGIN,
         transformedData
-      );
+      )) as unknown as TokenPair;
 
-      const loginData = this.validateResponse<LoginResponse>(
-        response,
-        "Sign in failed"
-      );
-
-      await this.storeTokens(loginData);
+      await TokenStorage.setTokens(tokens);
     } catch (error) {
       this.handleApiError(error, "Sign in failed");
     }

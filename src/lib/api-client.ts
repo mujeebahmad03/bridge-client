@@ -163,24 +163,18 @@ class ApiClient {
     }
 
     try {
-      const response = await axios.post<ApiResponse<TokenPair>>(
+      const response = await axios.post<TokenPair>(
         `${env.NEXT_PUBLIC_API_URL}${API_ROUTES.AUTH.REFRESH_TOKEN}`,
         { refresh: refreshToken }
       );
 
-      if (
-        response.data.status.status_code >= 200 &&
-        response.data.status.status_code < 300
-      ) {
-        const tokens = response.data.data as TokenPair;
-        await TokenStorage.setTokens(tokens);
+      if (response.data) {
+        const tokens = response.data as TokenPair;
+        await TokenStorage.setTokens({ ...tokens, refresh: refreshToken });
         return tokens.access;
       }
 
-      throw new ApiError(
-        response.data.status.status_code,
-        "Failed to refresh token"
-      );
+      throw new ApiError(response.status, "Failed to refresh token");
     } catch (error) {
       throw new ApiError(
         401,
