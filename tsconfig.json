@@ -24,6 +24,7 @@
       "@/website/*": ["./src/features/website/*"],
       "@/ui/*": ["./src/shared/components/ui/*"],
       "@/components/*": ["./src/shared/components/*"],
+      "@/layout/*": ["./src/features/common/layout/*"],
       "@/hooks/*": ["./src/shared/hooks/*"],
       "@/config/*": ["./src/shared/config/*"],
       "@/types/*": ["./src/shared/types/*"],

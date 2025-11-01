@@ -52,7 +52,7 @@ export const AuthLayout = ({ children }: AuthLayoutProps) => {
             className="max-w-md"
           >
             <h1 className="mb-6 text-5xl font-bold leading-tight">
-              AI-Powered Sales Platform
+              AI-Native Sales Platform
             </h1>
             <p className="text-lg leading-relaxed text-white/90">
               Transform your sales process with intelligent insights, automated

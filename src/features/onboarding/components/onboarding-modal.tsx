@@ -55,7 +55,7 @@ export function OnboardingModal({ onClose }: OnboardingModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-foreground/10 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-foreground/10 backdrop-blur-sm flex items-center justify-center p-4 z-50">
       <div className="bg-background rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex border border-border">
         {/* Left side - Form */}
         <div className="flex-1 overflow-y-auto p-8 md:p-12">
