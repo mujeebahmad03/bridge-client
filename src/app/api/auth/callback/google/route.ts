@@ -21,12 +21,23 @@ interface GoogleTokenResponse {
 /**
  * Type guard helpers
  */
-const isGoogleTokenResponse = (data: any): data is GoogleTokenResponse =>
-  typeof data?.access_token === "string" &&
-  typeof data?.token_type === "string";
+const isGoogleTokenResponse = (data: unknown): data is GoogleTokenResponse => {
+  if (typeof data !== "object" || data === null) {
+    return false;
+  }
+  const obj = data as Record<string, unknown>;
+  return (
+    typeof obj.access_token === "string" && typeof obj.token_type === "string"
+  );
+};
 
-const isBackendAuthResponse = (data: any): data is TokenPair =>
-  typeof data?.token === "string" && typeof data?.user === "object";
+const isBackendAuthResponse = (data: unknown): data is TokenPair => {
+  if (typeof data !== "object" || data === null) {
+    return false;
+  }
+  const obj = data as Record<string, unknown>;
+  return typeof obj.token === "string" && typeof obj.user === "object";
+};
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
   try {
