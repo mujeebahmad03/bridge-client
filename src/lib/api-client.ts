@@ -91,7 +91,10 @@ class ApiClient {
         this.logRequest(originalRequest, undefined, error);
 
         // Handle 401 errors - token expired
-        if (error.response?.status === 401 && !originalRequest._retry) {
+        if (
+          (error.response?.status === 401 || error.response?.status === 403) &&
+          !originalRequest._retry
+        ) {
           if (this.isAuthEndpoint(originalRequest.url ?? "")) {
             return Promise.reject(this.transformError(error));
           }
@@ -123,7 +126,7 @@ class ApiClient {
 
               // Redirect to login if in browser
               if (typeof window !== "undefined") {
-                window.location.href = "/login";
+                // window.location.href = `${env.NEXT_PUBLIC_APP_URL}${AUTH_ROUTES.LOGIN}`;
               }
 
               return Promise.reject(this.transformError(error));

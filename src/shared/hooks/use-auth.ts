@@ -2,9 +2,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
+import { API_ROUTES } from "@/config/api-routes";
 import { AUTH_ROUTES, DASHBOARD_ROUTES } from "@/config/app-route";
+import { apiClient } from "@/lib/api-client";
 
-import type { ResendOTPData } from "@/auth/types";
+import type { BusinessProfile, ResendOTPData } from "@/auth/types";
 import { authService } from "@/auth/utils/auth-service";
 import type {
   ForgotPasswordFormData,
@@ -170,6 +172,27 @@ export function useAuth() {
     },
   });
 
+  const updateProfileMutation = useMutation({
+    mutationFn: ({
+      external_id,
+      data,
+    }: {
+      external_id: string;
+      data: Partial<BusinessProfile>;
+    }) =>
+      apiClient.patch<BusinessProfile>(
+        API_ROUTES.USERS.UPDATE_PROFILE(external_id),
+        data
+      ),
+    onSuccess: () => {
+      toast.success("Profile updated successfully!");
+      queryClient.invalidateQueries({ queryKey: authQueryKeys.user() });
+    },
+    onError: (error: Error) => {
+      console.error("Update profile error:", error);
+    },
+  });
+
   return {
     // User data
     user,
@@ -177,6 +200,11 @@ export function useAuth() {
     userError,
     isAuthenticated,
     refetchUser,
+
+    // Update profile
+    updateProfile: updateProfileMutation.mutateAsync,
+    isUpdatingProfile: updateProfileMutation.isPending,
+    updateProfileError: updateProfileMutation.error,
 
     // Sign up
     signUp: signUpMutation.mutateAsync,

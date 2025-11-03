@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 import { API_ROUTES } from "@/config/api-routes";
+import { apiClient } from "@/lib/api-client";
 import { env } from "@/lib/env";
 import { TokenStorage } from "@/lib/token-manager";
 
@@ -31,14 +32,6 @@ const isGoogleTokenResponse = (data: unknown): data is GoogleTokenResponse => {
   );
 };
 
-const isBackendAuthResponse = (data: unknown): data is TokenPair => {
-  if (typeof data !== "object" || data === null) {
-    return false;
-  }
-  const obj = data as Record<string, unknown>;
-  return typeof obj.token === "string" && typeof obj.user === "object";
-};
-
 export async function GET(req: NextRequest): Promise<NextResponse> {
   try {
     const { searchParams } = new URL(req.url);
@@ -64,6 +57,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     });
 
     const tokenData = (await tokenRes.json()) as unknown;
+    console.log("🚀 ~ GET ~ tokenData:", tokenData);
 
     if (!tokenRes.ok || !isGoogleTokenResponse(tokenData)) {
       console.error("Invalid token response:", tokenData);
@@ -74,24 +68,11 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     }
 
     // Send data to the backend for login/signup
-    const backendRes = await fetch(
-      `${env.NEXT_PUBLIC_API_URL}${API_ROUTES.AUTH.GOOGLE}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...tokenData, code }),
-      }
-    );
-
-    const backendData = (await backendRes.json()) as unknown;
-
-    if (!backendRes.ok || !isBackendAuthResponse(backendData)) {
-      console.error("Invalid backend response:", backendData);
-      return NextResponse.json(
-        { error: "Backend login failed" },
-        { status: 400 }
-      );
-    }
+    const backendData = (await apiClient.post<TokenPair>(
+      API_ROUTES.AUTH.GOOGLE,
+      { ...tokenData, code }
+    )) as unknown as TokenPair;
+    console.log("🚀 ~ GET ~ backendData:", backendData);
 
     await TokenStorage.setTokens(backendData);
 

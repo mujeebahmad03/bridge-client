@@ -13,6 +13,6 @@ export const API_ROUTES = {
   },
   USERS: {
     PROFILE: "users/from-auth/",
-    UPDATE_PROFILE: "users/update-profile/",
+    UPDATE_PROFILE: (id: string) => `users/${id}/`,
   },
 };

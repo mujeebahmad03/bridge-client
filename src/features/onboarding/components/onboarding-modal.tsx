@@ -1,12 +1,15 @@
 "use client";
 
-import { X } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 
+import { useAuth } from "@/hooks/use-auth";
+
 import { AboutYouStep } from "./about-you-step";
 import { YourCompanyStep } from "./your-company-step";
+import { ErrorResponse } from "@/auth/components/shared";
 import { type OnboardingFormData } from "@/onboarding/types";
 
 interface OnboardingModalProps {
@@ -14,6 +17,9 @@ interface OnboardingModalProps {
 }
 
 export function OnboardingModal({ onClose }: OnboardingModalProps) {
+  const { user, updateProfile, isUpdatingProfile, updateProfileError } =
+    useAuth();
+
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [formData, setFormData] = useState<OnboardingFormData>({
     // Step 1: About You
@@ -29,10 +35,16 @@ export function OnboardingModal({ onClose }: OnboardingModalProps) {
 
   const totalSteps = 2;
 
-  const handleNext = (): void => {
+  const handleNext = async (): Promise<void> => {
     if (currentStep < totalSteps) {
       setCurrentStep(currentStep + 1);
     } else {
+      await updateProfile({
+        external_id: user?.external_id ?? "",
+        data: {
+          metadata: formData as unknown as Record<string, unknown>,
+        },
+      });
       // Onboarding complete
       onClose();
     }
@@ -99,6 +111,8 @@ export function OnboardingModal({ onClose }: OnboardingModalProps) {
             })}
           </div>
 
+          {updateProfileError && <ErrorResponse error={updateProfileError} />}
+
           {/* Form content */}
           <div className="min-h-96">
             {currentStep === 1 && (
@@ -116,8 +130,20 @@ export function OnboardingModal({ onClose }: OnboardingModalProps) {
                 Back
               </Button>
             )}
-            <Button onClick={handleNext} className="flex-1">
-              {currentStep === totalSteps ? "Complete" : "Next"}
+            <Button
+              onClick={handleNext}
+              className="flex-1"
+              disabled={isUpdatingProfile}
+            >
+              {isUpdatingProfile && (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Updating...
+                </>
+              )}
+              {!isUpdatingProfile && currentStep === totalSteps
+                ? "Complete"
+                : "Next"}
             </Button>
           </div>
         </div>

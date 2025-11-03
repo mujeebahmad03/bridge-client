@@ -4,6 +4,8 @@ import { useState } from "react";
 
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
+import { useLocalStorage } from "@/hooks/use-local-storage";
+
 import data from "./data.json";
 import {
   AppSidebar,
@@ -15,7 +17,19 @@ import {
 import { OnboardingModal } from "@/onboarding/components";
 
 export default function Page() {
-  const [showOnboarding, setShowOnboarding] = useState(true);
+  const { removeValue, value } = useLocalStorage<{ email: string } | null>(
+    "emailForVerification",
+    null
+  );
+
+  // Initialize showOnboarding based on whether value exists
+  const [showOnboarding, setShowOnboarding] = useState(!!value);
+
+  const handleClose = () => {
+    setShowOnboarding(false);
+    removeValue(); // remove from local storage
+  };
+
   return (
     <SidebarProvider
       style={
@@ -41,9 +55,7 @@ export default function Page() {
         </div>
       </SidebarInset>
 
-      {showOnboarding && (
-        <OnboardingModal onClose={() => setShowOnboarding(false)} />
-      )}
+      {showOnboarding && <OnboardingModal onClose={handleClose} />}
     </SidebarProvider>
   );
 }
