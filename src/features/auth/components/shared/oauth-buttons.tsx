@@ -15,20 +15,24 @@ interface OAuthButtonsProps {
   delay?: number;
 }
 
+const generateRandomOauthState = () => {
+  return Math.random().toString(36).substring(2, 12);
+};
+
 const oauthProviders = [
   {
     name: "Google",
     icon: FcGoogle,
     color: "text-red-500",
     bg: "hover:bg-red-50 dark:hover:bg-red-950/20",
-    link: OAUTH_PROVIDERS.GOOGLE,
+    link: `${OAUTH_PROVIDERS.GOOGLE}&state=${generateRandomOauthState()}`,
   },
   {
     name: "Microsoft",
     icon: PiMicrosoftOutlookLogoFill,
     color: "text-blue-600",
     bg: "hover:bg-blue-50 dark:hover:bg-blue-950/20",
-    link: OAUTH_PROVIDERS.MICROSOFT,
+    link: `${OAUTH_PROVIDERS.MICROSOFT}&state=${generateRandomOauthState()}`,
   },
 ];
 
