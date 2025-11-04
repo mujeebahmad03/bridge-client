@@ -8,6 +8,7 @@ export const API_ROUTES = {
     RESEND_OTP: "users/resend-signup-otp/",
     REFRESH_TOKEN: "users/auth/refresh/",
     LOGOUT: "users/auth/logout/",
+    SOCIAL_AUTH_LOGIN: "users/social-auth/login/",
     GOOGLE: "users/social-auth/login/google/",
     MICROSOFT: "users/social-auth/login/microsoft/",
   },
