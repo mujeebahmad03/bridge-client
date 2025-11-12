@@ -50,6 +50,7 @@ type ApiResponse<T = unknown> =
 
 interface TokenPair {
   access: string;
+  token: string;
   refresh: string;
 }
 

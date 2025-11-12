@@ -6,13 +6,15 @@ import { type TokenPair } from "@/types/api";
 
 import { env } from "./env";
 
-// Token types
-
 const rawSecret = env.NEXT_PUBLIC_JWT_SECRET;
+
+const TOKENS = {
+  ACCESS_TOKEN: "access_token",
+  REFRESH_TOKEN: "refresh_token",
+} as const;
 
 export class TokenStorage {
   private static async getEncryptionKey(): Promise<Uint8Array> {
-    // Create a consistent key using SHA-256
     const hash = crypto.createHash("sha256").update(rawSecret).digest();
     return new Uint8Array(hash);
   }
@@ -43,36 +45,39 @@ export class TokenStorage {
   }
 
   static async setTokens(tokens: TokenPair) {
-    const { access, refresh } = tokens;
+    const { access, token, refresh } = tokens;
 
-    const encryptedAccessToken = await this.encrypt(access, 24 * 60 * 60); // 15 minutes
-    const encryptedRefreshToken = await this.encrypt(refresh, 7 * 24 * 60 * 60); // 7 days
+    const accessToken = access ? access : token;
 
-    setCookie("access_token", encryptedAccessToken, {
+    const encryptedAccessToken = await this.encrypt(accessToken, 24 * 60 * 60);
+
+    const encryptedRefreshToken = await this.encrypt(refresh, 7 * 24 * 60 * 60);
+
+    setCookie(TOKENS.ACCESS_TOKEN, encryptedAccessToken, {
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      expires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hrs
+      maxAge: 24 * 60 * 60,
     });
 
-    setCookie("refresh_token", encryptedRefreshToken, {
+    setCookie(TOKENS.REFRESH_TOKEN, encryptedRefreshToken, {
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+      maxAge: 7 * 24 * 60 * 60,
     });
   }
 
   static async getAccessToken(): Promise<string | null> {
-    const encryptedToken = await getCookie("access_token");
-    return encryptedToken ? await this.decrypt(encryptedToken) : null;
+    const encryptedToken = await getCookie(TOKENS.ACCESS_TOKEN);
+    return encryptedToken ? await this.decrypt(encryptedToken as string) : null;
   }
 
   static async getRefreshToken(): Promise<string | null> {
-    const encryptedToken = await getCookie("refresh_token");
-    return encryptedToken ? await this.decrypt(encryptedToken) : null;
+    const encryptedToken = await getCookie(TOKENS.REFRESH_TOKEN);
+    return encryptedToken ? await this.decrypt(encryptedToken as string) : null;
   }
 
   static clearTokens() {
-    deleteCookie("access_token");
-    deleteCookie("refresh_token");
+    deleteCookie(TOKENS.ACCESS_TOKEN);
+    deleteCookie(TOKENS.REFRESH_TOKEN);
   }
 }
