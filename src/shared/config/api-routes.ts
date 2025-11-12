@@ -18,7 +18,7 @@ export const API_ROUTES = {
   },
   TEAM: {
     GET_TEAMS: "users/teams/",
-    CREATE_TEAM: "users/teams/create-team/",
+    CREATE_TEAM: "users/teams/",
     UPDATE_TEAM: (id: string) => `users/teams/${id}/` as const,
     REMOVE_MEMBER: (teamId: string, userId: string) =>
       `users/teams/${teamId}/remove-member/${userId}/` as const,
