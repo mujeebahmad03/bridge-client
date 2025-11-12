@@ -9,10 +9,10 @@ import { useLocalStorage } from "@/hooks/use-local-storage";
 import data from "./data.json";
 import {
   ChartAreaInteractive,
-  DashboardContent,
   DataTable,
   SectionCards,
-} from "@/layout/components";
+} from "@/dashboard/components";
+import { DashboardContent } from "@/layout/components";
 import { type CrumbItem } from "@/layout/types";
 import { OnboardingModal } from "@/onboarding/components";
 

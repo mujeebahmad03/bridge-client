@@ -4,16 +4,10 @@ export type NavMainItem = {
   title: string;
   url: string;
   icon: Icon;
+  submenu?: NavMainItem[];
 };
 
-export interface NavItem {
-  title: string;
-  url: string;
-  icon: Icon;
-  submenu?: NavMainItem[];
-}
-
-export interface CrumbItem extends Omit<NavItem, "submenu" | "icon"> {
+export interface CrumbItem extends Omit<NavMainItem, "submenu" | "icon"> {
   icon?: React.ElementType;
 }
 

@@ -28,6 +28,7 @@
       "@/hooks/*": ["./src/shared/hooks/*"],
       "@/config/*": ["./src/shared/config/*"],
       "@/teams/*": ["./src/features/teams/*"],
+      "@/dashboard/*": ["./src/features/dashboard/*"],
       "@/types/*": ["./src/shared/types/*"],
       "@/*": ["./src/*"]
     }
