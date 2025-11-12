@@ -6,10 +6,9 @@ import { useState } from "react";
 import { DASHBOARD_ROUTES } from "@/config/app-route";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 
-import data from "./data.json";
 import {
   ChartAreaInteractive,
-  DataTable,
+  DashboardTable,
   SectionCards,
 } from "@/dashboard/components";
 import { DashboardContent } from "@/layout/components";
@@ -44,7 +43,7 @@ export default function Page() {
       <div className="px-4 lg:px-6">
         <ChartAreaInteractive />
       </div>
-      <DataTable data={data} />
+      <DashboardTable />
       {showOnboarding && <OnboardingModal onClose={handleClose} />}
     </DashboardContent>
   );
