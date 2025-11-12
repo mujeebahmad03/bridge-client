@@ -39,7 +39,7 @@ function UserAvatar({
 }) {
   return (
     <Avatar className={className}>
-      <AvatarImage src={user?.avatar} alt={getFullName(user)} />
+      <AvatarImage src={user?.avatar ?? ""} alt={getFullName(user)} />
       <AvatarFallback className="rounded-lg">
         {getInitials(user)}
       </AvatarFallback>
