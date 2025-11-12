@@ -1,20 +1,28 @@
 "use client";
 
+import { IconHome } from "@tabler/icons-react";
 import { useState } from "react";
 
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-
+import { DASHBOARD_ROUTES } from "@/config/app-route";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 
 import data from "./data.json";
 import {
-  AppSidebar,
   ChartAreaInteractive,
+  DashboardContent,
   DataTable,
   SectionCards,
-  SiteHeader,
 } from "@/layout/components";
+import { type CrumbItem } from "@/layout/types";
 import { OnboardingModal } from "@/onboarding/components";
+
+const breadcrumbs: CrumbItem[] = [
+  {
+    title: "Home",
+    url: DASHBOARD_ROUTES.OVERVIEW,
+    icon: IconHome,
+  },
+];
 
 export default function Page() {
   const { removeValue, value } = useLocalStorage<{ email: string } | null>(
@@ -31,31 +39,13 @@ export default function Page() {
   };
 
   return (
-    <SidebarProvider
-      style={
-        {
-          "--sidebar-width": "calc(var(--spacing) * 72)",
-          "--header-height": "calc(var(--spacing) * 12)",
-        } as React.CSSProperties
-      }
-    >
-      <AppSidebar variant="inset" />
-      <SidebarInset>
-        <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-2">
-            <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-              <SectionCards />
-              <div className="px-4 lg:px-6">
-                <ChartAreaInteractive />
-              </div>
-              <DataTable data={data} />
-            </div>
-          </div>
-        </div>
-      </SidebarInset>
-
+    <DashboardContent breadcrumbs={breadcrumbs} currentPage="Overview">
+      <SectionCards />
+      <div className="px-4 lg:px-6">
+        <ChartAreaInteractive />
+      </div>
+      <DataTable data={data} />
       {showOnboarding && <OnboardingModal onClose={handleClose} />}
-    </SidebarProvider>
+    </DashboardContent>
   );
 }

@@ -113,7 +113,7 @@ export function DataTable<TData, TValue>({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 relative">
       <DataTableToolbar
         table={table}
         searchKey={searchKey}
@@ -125,7 +125,7 @@ export function DataTable<TData, TValue>({
       />
       <div className="rounded-md border bg-card">
         <Table>
-          <TableHeader>
+          <TableHeader className="bg-muted sticky top-0 z-10">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow
                 key={headerGroup.id}
