@@ -2,13 +2,27 @@
 
 import { useTheme } from "next-themes";
 
+import { cn } from "@/lib/utils";
+
 interface LogoProps {
-  isDark?: boolean;
   size?: "sm" | "md" | "lg";
   className?: string;
+  barClassName?: string;
+  textClassName?: string;
+  gapClassName?: string;
+  barGapClassName?: string;
+  showText?: boolean;
 }
 
-export function Logo({ size = "sm", className = "" }: LogoProps) {
+export function Logo({
+  size = "sm",
+  className = "",
+  barClassName = "",
+  textClassName = "",
+  gapClassName = "",
+  barGapClassName = "",
+  showText = true,
+}: LogoProps) {
   const { theme } = useTheme();
 
   const isDark = theme !== "light";
@@ -22,51 +36,72 @@ export function Logo({ size = "sm", className = "" }: LogoProps) {
   const currentSize = sizes[size];
 
   return (
-    <div className={`flex items-center ${currentSize.gap} ${className}`}>
+    <div
+      className={cn(
+        "flex items-center",
+        currentSize.gap,
+        gapClassName,
+        className
+      )}
+    >
       {/* Three Vertical Bars */}
-      <div className="flex items-end gap-1.5">
+      <div className={cn("flex items-end gap-1.5", barGapClassName)}>
         <div
           suppressHydrationWarning
-          className={`${currentSize.bar} rounded-full transition-all duration-300 ${
+          className={cn(
+            currentSize.bar,
+            "rounded-full transition-all duration-300",
+            barClassName,
             isDark
               ? "bg-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.6)]"
               : "bg-blue-800"
-          }`}
+          )}
           style={{ transform: "translateY(0px)" }}
         />
         <div
           suppressHydrationWarning
-          className={`${currentSize.bar} rounded-full transition-all duration-300 ${
+          className={cn(
+            currentSize.bar,
+            "rounded-full transition-all duration-300",
+            barClassName,
             isDark
               ? "bg-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.6)]"
               : "bg-blue-800"
-          }`}
+          )}
           style={{ transform: "translateY(10px)" }}
         />
         <div
           suppressHydrationWarning
-          className={`${currentSize.bar} rounded-full transition-all duration-300 ${
+          className={cn(
+            currentSize.bar,
+            "rounded-full transition-all duration-300",
+            barClassName,
             isDark
               ? "bg-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.6)]"
               : "bg-blue-800"
-          }`}
+          )}
           style={{ transform: "translateY(20px)" }}
         />
       </div>
 
       {/* Bridge Text */}
-      <h1
-        suppressHydrationWarning
-        className={`${currentSize.text} font-bold tracking-tight transition-colors duration-300 ${
-          isDark ? "text-white" : "text-black"
-        }`}
-        style={{
-          fontFamily: "var(--font-sans)",
-          transform: "translateY(20px)",
-        }}
-      >
-        Bridge
-      </h1>
+      {showText && (
+        <h1
+          suppressHydrationWarning
+          className={cn(
+            currentSize.text,
+            "font-bold tracking-tight transition-colors duration-300",
+            textClassName,
+            isDark ? "text-white" : "text-black"
+          )}
+          style={{
+            fontFamily: "var(--font-sans)",
+            transform: "translateY(20px)",
+          }}
+        >
+          Bridge
+        </h1>
+      )}
     </div>
   );
 }

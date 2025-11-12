@@ -37,6 +37,7 @@ export interface User {
   first_name: string;
   last_name: string;
   user_type: UserType;
+  avatar: string;
   is_active: boolean;
   profile: BusinessProfile;
   teams: Team[];

@@ -14,6 +14,24 @@ export const API_ROUTES = {
   },
   USERS: {
     PROFILE: "users/from-auth/",
-    UPDATE_PROFILE: (id: string) => `users/${id}/`,
+    UPDATE_PROFILE: (id: string) => `users/${id}/` as const,
   },
-};
+  TEAM: {
+    GET_TEAMS: "users/teams/",
+    CREATE_TEAM: "users/teams/create-team/",
+    UPDATE_TEAM: (id: string) => `users/teams/${id}/` as const,
+    REMOVE_MEMBER: (teamId: string, userId: string) =>
+      `users/teams/${teamId}/remove-member/${userId}/` as const,
+  },
+  INVITE: {
+    GET_INVITES: "users/team-invites/",
+    SEND_INVITE: (teamId: string) =>
+      `users/teams/${teamId}/invite-user/` as const,
+    RESEND_INVITE: (id: string) =>
+      `users/team-invites/${id}/resend-invite/` as const,
+    ACCEPT_INVITE: (id: string) =>
+      `users/team-invites/${id}/accept-invite/` as const,
+    REJECT_INVITE: (id: string) =>
+      `users/team-invites/${id}/reject-invite/` as const,
+  },
+} as const;

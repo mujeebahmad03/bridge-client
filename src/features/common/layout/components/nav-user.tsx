@@ -27,17 +27,64 @@ import {
 
 import { useAuth } from "@/hooks/use-auth";
 
-export function NavUser({
+import { type User } from "@/auth/types";
+import { getFullName, getInitials } from "@/shared/utils";
+
+function UserAvatar({
   user,
+  className = "h-8 w-8 rounded-lg",
 }: {
-  user: {
-    name: string;
-    email: string;
-    avatar: string;
-  };
+  user?: User | null;
+  className?: string;
 }) {
+  return (
+    <Avatar className={className}>
+      <AvatarImage src={user?.avatar} alt={getFullName(user)} />
+      <AvatarFallback className="rounded-lg">
+        {getInitials(user)}
+      </AvatarFallback>
+    </Avatar>
+  );
+}
+
+function UserInfo({ user }: { user?: User | null }) {
+  return (
+    <div className="grid flex-1 text-left text-sm leading-tight">
+      <span className="truncate font-medium">{getFullName(user)}</span>
+      <span className="text-muted-foreground truncate text-xs">
+        {user?.email_address}
+      </span>
+    </div>
+  );
+}
+
+function LoadingSkeleton() {
+  return (
+    <div className="flex items-center gap-3 px-2 py-1.5">
+      <div className="h-8 w-8 rounded-lg bg-linear-to-r from-muted via-muted-foreground/30 to-muted animate-[shimmer_2s_ease-in-out_infinite] bg-size-[200%_100%]" />
+      <div className="grid flex-1 gap-2">
+        <div className="h-4 w-24 rounded bg-linear-to-r from-muted via-muted-foreground/30 to-muted animate-[shimmer_2s_ease-in-out_infinite] bg-size-[200%_100%]" />
+        <div className="h-3 w-32 rounded bg-linear-to-r from-muted via-muted-foreground/30 to-muted animate-[shimmer_2s_ease-in-out_infinite] bg-size-[200%_100%]" />
+      </div>
+    </div>
+  );
+}
+
+export function NavUser() {
   const { isMobile } = useSidebar();
-  const { signOut } = useAuth();
+  const { signOut, user, isLoadingUser } = useAuth();
+
+  if (isLoadingUser) {
+    return (
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <SidebarMenuButton size="lg" disabled>
+            <LoadingSkeleton />
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarMenu>
+    );
+  }
 
   return (
     <SidebarMenu>
@@ -48,16 +95,11 @@ export function NavUser({
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
-              <Avatar className="h-8 w-8 rounded-lg grayscale">
-                <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback className="rounded-lg">CN</AvatarFallback>
-              </Avatar>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{user.name}</span>
-                <span className="text-muted-foreground truncate text-xs">
-                  {user.email}
-                </span>
-              </div>
+              <UserAvatar
+                user={user}
+                className="h-8 w-8 rounded-lg grayscale"
+              />
+              <UserInfo user={user} />
               <IconDotsVertical className="ml-auto size-4" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
@@ -69,16 +111,8 @@ export function NavUser({
           >
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback className="rounded-lg">CN</AvatarFallback>
-                </Avatar>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{user.name}</span>
-                  <span className="text-muted-foreground truncate text-xs">
-                    {user.email}
-                  </span>
-                </div>
+                <UserAvatar user={user} />
+                <UserInfo user={user} />
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
