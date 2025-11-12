@@ -78,6 +78,7 @@ class AuthService {
     await TokenStorage.setTokens({
       access: data.access,
       refresh: data.refresh,
+      token: data.token,
     });
   }
 

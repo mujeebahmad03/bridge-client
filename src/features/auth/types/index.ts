@@ -11,6 +11,7 @@ export interface SignUpResponse {
 }
 
 export interface LoginResponse {
+  token: string;
   refresh: string;
   access: string;
 }
