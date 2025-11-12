@@ -24,6 +24,7 @@ export const DASHBOARD_ROUTES = {
   CRM: `${baseDashboardRoute}/crm`,
   CRM_IMPORT: `${baseDashboardRoute}/crm/import`,
   TASKS: `${baseDashboardRoute}/tasks`,
+  TEAMS: `${baseDashboardRoute}/teams`,
   TEMPLATES: `${baseDashboardRoute}/templates`,
   SETTINGS: `${baseDashboardRoute}/settings`,
 } as const;
