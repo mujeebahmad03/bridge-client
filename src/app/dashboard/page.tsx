@@ -4,13 +4,10 @@ import { IconHome } from "@tabler/icons-react";
 import { useState } from "react";
 
 import { DASHBOARD_ROUTES } from "@/config/app-route";
+import { useAuth } from "@/hooks/use-auth";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 
-import {
-  ChartAreaInteractive,
-  DashboardTable,
-  SectionCards,
-} from "@/dashboard/components";
+import { DashboardTable, SectionCards } from "@/dashboard/components";
 import { DashboardContent } from "@/layout/components";
 import { type CrumbItem } from "@/layout/types";
 import { OnboardingModal } from "@/onboarding/components";
@@ -28,7 +25,7 @@ export default function Page() {
     "emailForVerification",
     null
   );
-
+  const { user } = useAuth();
   // Initialize showOnboarding based on whether value exists
   const [showOnboarding, setShowOnboarding] = useState(!!value);
 
@@ -39,10 +36,8 @@ export default function Page() {
 
   return (
     <DashboardContent breadcrumbs={breadcrumbs} currentPage="Overview">
+      <h1 className="text-2xl font-bold">Welcome {user?.first_name}!</h1>
       <SectionCards />
-      <div className="px-4 lg:px-6">
-        <ChartAreaInteractive />
-      </div>
       <DashboardTable />
       {showOnboarding && <OnboardingModal onClose={handleClose} />}
     </DashboardContent>

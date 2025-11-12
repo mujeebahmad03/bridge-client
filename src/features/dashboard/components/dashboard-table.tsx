@@ -15,7 +15,7 @@ import { ContactEvents } from "./contact-events";
 export function DashboardTable() {
   return (
     <Tabs defaultValue="events" className="w-full flex-col justify-start gap-6">
-      <div className="flex items-center justify-between px-4 lg:px-6">
+      <div className="flex items-center justify-between">
         <Label htmlFor="view-selector" className="sr-only">
           View
         </Label>
@@ -44,14 +44,14 @@ export function DashboardTable() {
 
       <TabsContent
         value="events"
-        className="relative flex flex-col gap-4 overflow-auto px-4 lg:px-6"
+        className="relative flex flex-col gap-4 overflow-auto"
       >
         <ContactEvents />
       </TabsContent>
-      <TabsContent value="tasks" className="flex flex-col px-4 lg:px-6">
+      <TabsContent value="tasks" className="flex flex-col">
         <div className="aspect-video w-full flex-1 rounded-lg border border-dashed" />
       </TabsContent>
-      <TabsContent value="suggestions" className="flex flex-col px-4 lg:px-6">
+      <TabsContent value="suggestions" className="flex flex-col">
         <div className="aspect-video w-full flex-1 rounded-lg border border-dashed" />
       </TabsContent>
     </Tabs>
