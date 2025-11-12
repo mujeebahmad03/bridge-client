@@ -90,6 +90,7 @@ class AuthService {
       email_address: userData.email_address,
       first_name: userData.first_name,
       last_name: userData.last_name,
+      avatar: userData.avatar,
       user_type: userData.user_type,
       is_active: userData.is_active,
       profile: userData.profile,
