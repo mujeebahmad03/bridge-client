@@ -34,4 +34,8 @@ export const API_ROUTES = {
     REJECT_INVITE: (id: string) =>
       `users/team-invites/${id}/reject-invite/` as const,
   },
+  DASHBOARD: {
+    GET_CONTACT_EVENTS: "contacts/contact-events/",
+    GET_TASKS: "tasks/tasks/",
+  },
 } as const;
