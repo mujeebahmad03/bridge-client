@@ -1,28 +1,49 @@
+"use client";
+
+import { Mail, Users } from "lucide-react";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/ui/tabs";
 
-import { TeamMembersTable } from "@/teams/components";
+import { TeamInvitesTable, TeamMembersTable } from "@/teams/components";
+import { useGetTeamInvites, useGetTeamMembers } from "@/teams/hooks";
 
 const TeamsPage = () => {
+  const { teamMembers, isLoading } = useGetTeamMembers();
+  const { teamInvites, isLoading: isLoadingInvites } = useGetTeamInvites();
+
   return (
     <Tabs
       defaultValue="members"
       className="w-full flex-col justify-start gap-6"
     >
-      <div className="flex items-center justify-between">
-        <TabsList className="**:data-[slot=badge]:bg-muted-foreground/30 **:data-[slot=badge]:size-5 **:data-[slot=badge]:rounded-full **:data-[slot=badge]:px-1">
-          <TabsTrigger value="members">Members</TabsTrigger>
-          <TabsTrigger value="invites">Invites</TabsTrigger>
-        </TabsList>
-      </div>
+      <TabsList>
+        <TabsTrigger value="members" className="gap-2">
+          <Users className="h-4 w-4" />
+          Members
+          <span className="ml-1 rounded-full bg-background px-2 py-0.5 text-xs">
+            {teamMembers.length}
+          </span>
+        </TabsTrigger>
+        <TabsTrigger value="invites" className="gap-2">
+          <Mail className="h-4 w-4" />
+          Invites
+          <span className="ml-1 rounded-full bg-background px-2 py-0.5 text-xs">
+            {teamInvites.filter((i) => i.status === "PENDING").length}
+          </span>
+        </TabsTrigger>
+      </TabsList>
 
       <TabsContent
         value="members"
         className="relative flex flex-col gap-4 overflow-auto"
       >
-        <TeamMembersTable />
+        <TeamMembersTable teamMembers={teamMembers} isLoading={isLoading} />
       </TabsContent>
       <TabsContent value="invites" className="flex flex-col">
-        <div className="aspect-video w-full flex-1 rounded-lg border border-dashed" />
+        <TeamInvitesTable
+          teamInvites={teamInvites}
+          isLoading={isLoadingInvites}
+        />
       </TabsContent>
     </Tabs>
   );

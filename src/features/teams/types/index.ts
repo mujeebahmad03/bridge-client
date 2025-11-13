@@ -23,10 +23,13 @@ export interface TeamMember {
   last_modified_at: string; // ISO 8601 timestamp for last modification
 }
 
+export type TeamInvitationStatus = "PENDING" | "ACCEPTED" | "REJECTED";
+export type TeamInvitationRole = "ADMIN" | "MEMBER" | string;
 export interface TeamInvitation {
   id: string;
   team: Team;
   email_address: string; // Email address of the invited user
-  role: "ADMIN" | "MEMBER" | string; // Role assigned to the user
+  role: TeamInvitationRole; // Role assigned to the user
   invited_by: string; // UUID of the user who sent the invitation
+  status: TeamInvitationStatus; // Status of the invitation
 }

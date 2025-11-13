@@ -1,13 +1,17 @@
 "use client";
 
-import { DataTable } from "@/components/data-table";
+import { DataTable } from "@/components/data-table/data-table";
 
 import { teamMemberColumns } from "@/teams/components/columns";
-import { useGetTeamMembers } from "@/teams/hooks";
+import { type TeamMember } from "@/teams/types";
 
-export const TeamMembersTable = () => {
-  const { teamMembers, isLoading } = useGetTeamMembers();
-
+export const TeamMembersTable = ({
+  teamMembers,
+  isLoading,
+}: {
+  teamMembers: TeamMember[];
+  isLoading: boolean;
+}) => {
   return (
     <DataTable
       columns={teamMemberColumns}

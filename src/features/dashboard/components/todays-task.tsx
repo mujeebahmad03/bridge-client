@@ -1,6 +1,6 @@
 "use client";
 
-import { DataTable } from "@/components/data-table";
+import { DataTable } from "@/components/data-table/data-table";
 
 import { taskColumns } from "./columns";
 import { useTasks } from "@/tasks/hooks";

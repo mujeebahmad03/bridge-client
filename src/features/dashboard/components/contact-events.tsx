@@ -1,4 +1,4 @@
-import { DataTable } from "@/components/data-table";
+import { DataTable } from "@/components/data-table/data-table";
 
 import { contactEventColumns } from "@/dashboard/components/columns";
 import { useContactEvents } from "@/dashboard/hooks";
