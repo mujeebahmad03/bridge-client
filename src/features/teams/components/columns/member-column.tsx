@@ -1,10 +1,12 @@
 import { type ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 
+import { DataTableColumnHeader } from "@/components/data-table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/ui/avatar";
 import { Badge } from "@/ui/badge";
 import { Checkbox } from "@/ui/checkbox";
 
+import { MemberActions } from "../member-action";
 import { getFullName, getInitials } from "@/shared/utils";
 import { type TeamMember } from "@/teams/types";
 
@@ -37,7 +39,9 @@ export const teamMemberColumns: ColumnDef<TeamMember>[] = [
   },
   {
     accessorKey: "name",
-    header: "Name",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Name" />
+    ),
     cell: ({ row }) => {
       const member = row.original;
       const fullName = getFullName(member);
@@ -56,7 +60,9 @@ export const teamMemberColumns: ColumnDef<TeamMember>[] = [
   },
   {
     accessorKey: "email_address",
-    header: "Email",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Email" />
+    ),
     cell: ({ row }) => {
       return (
         <div className="text-sm text-muted-foreground">
@@ -67,7 +73,9 @@ export const teamMemberColumns: ColumnDef<TeamMember>[] = [
   },
   {
     accessorKey: "user_type",
-    header: "Role",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Role" />
+    ),
     cell: ({ row }) => {
       const userType = row.original.user_type;
       const roleColors: Record<string, string> = {
@@ -91,7 +99,9 @@ export const teamMemberColumns: ColumnDef<TeamMember>[] = [
   },
   {
     accessorKey: "is_active",
-    header: "Status",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Status" />
+    ),
     cell: ({ row }) => {
       const isActive = row.original.is_active;
       return (
@@ -110,7 +120,9 @@ export const teamMemberColumns: ColumnDef<TeamMember>[] = [
   },
   {
     accessorKey: "created_at",
-    header: "Joined",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Joined" />
+    ),
     cell: ({ row }) => {
       try {
         const date = new Date(row.original.created_at);
@@ -127,5 +139,28 @@ export const teamMemberColumns: ColumnDef<TeamMember>[] = [
         );
       }
     },
+  },
+  {
+    id: "actions",
+    cell: ({ row }) => (
+      <MemberActions
+        member={row.original}
+        onViewDetails={(member) => {
+          window.dispatchEvent(
+            new CustomEvent("member-view-details", { detail: member })
+          );
+        }}
+        onRemove={(member) => {
+          window.dispatchEvent(
+            new CustomEvent("member-remove", { detail: member })
+          );
+        }}
+        onToggleStatus={(member) => {
+          window.dispatchEvent(
+            new CustomEvent("member-toggle-status", { detail: member })
+          );
+        }}
+      />
+    ),
   },
 ];

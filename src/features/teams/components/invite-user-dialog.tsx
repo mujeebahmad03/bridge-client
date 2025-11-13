@@ -103,7 +103,7 @@ export function InviteUserDialog({
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="space-y-3">
             {invites.map((invite, index) => (
-              <div key={invite.email} className="flex items-end gap-2">
+              <div key={invite.email} className="flex items-center gap-2">
                 <div className="flex-1 space-y-2">
                   <Label htmlFor={`email-${index}`}>
                     Email {invites.length > 1 && `#${index + 1}`}

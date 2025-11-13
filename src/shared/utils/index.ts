@@ -13,5 +13,8 @@ export const getInitials = (user?: User | TeamMember | null) => {
     return "G";
   }
 
-  return `${user.first_name[0].toUpperCase()}${user.last_name[0].toUpperCase()}`;
+  const first = user.first_name?.[0]?.toUpperCase() ?? "";
+  const last = user.last_name?.[0]?.toUpperCase() ?? "";
+
+  return first && last ? `${first}${last}` : first || last || "G";
 };

@@ -2,7 +2,7 @@ import { DASHBOARD_ROUTES } from "@/config/app-route";
 
 import { DashboardContent } from "@/layout/components";
 import { type CrumbItem } from "@/layout/types";
-import TeamsPage from "@/teams/page";
+import { TeamsPage } from "@/teams/page";
 
 const breadcrumbs: CrumbItem[] = [
   {

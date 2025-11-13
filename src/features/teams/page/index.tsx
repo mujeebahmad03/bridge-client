@@ -1,52 +1,47 @@
 "use client";
 
-import { Mail, Users } from "lucide-react";
+import { TeamDialogs, TeamHeader, TeamTabs } from "@/teams/components";
+import {
+  useGetTeamInvites,
+  useGetTeamMembers,
+  useTeamDialogs,
+} from "@/teams/hooks";
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/ui/tabs";
-
-import { TeamInvitesTable, TeamMembersTable } from "@/teams/components";
-import { useGetTeamInvites, useGetTeamMembers } from "@/teams/hooks";
-
-const TeamsPage = () => {
+export const TeamsPage = () => {
   const { teamMembers, isLoading } = useGetTeamMembers();
   const { teamInvites, isLoading: isLoadingInvites } = useGetTeamInvites();
+  const { dialog, openDialog, closeDialog } = useTeamDialogs();
+
+  const handleConfirmRemove = () => {
+    // Your remove logic here
+    console.log("Removing member:", dialog.data);
+    closeDialog();
+  };
+
+  const handleConfirmToggle = () => {
+    // Your toggle logic here
+    console.log("Toggling status for:", dialog.data);
+    closeDialog();
+  };
 
   return (
-    <Tabs
-      defaultValue="members"
-      className="w-full flex-col justify-start gap-6"
-    >
-      <TabsList>
-        <TabsTrigger value="members" className="gap-2">
-          <Users className="h-4 w-4" />
-          Members
-          <span className="ml-1 rounded-full bg-background px-2 py-0.5 text-xs">
-            {teamMembers.length}
-          </span>
-        </TabsTrigger>
-        <TabsTrigger value="invites" className="gap-2">
-          <Mail className="h-4 w-4" />
-          Invites
-          <span className="ml-1 rounded-full bg-background px-2 py-0.5 text-xs">
-            {teamInvites.filter((i) => i.status === "PENDING").length}
-          </span>
-        </TabsTrigger>
-      </TabsList>
+    <div className="space-y-6">
+      <TeamHeader onInviteClick={() => openDialog("invite")} />
 
-      <TabsContent
-        value="members"
-        className="relative flex flex-col gap-4 overflow-auto"
-      >
-        <TeamMembersTable teamMembers={teamMembers} isLoading={isLoading} />
-      </TabsContent>
-      <TabsContent value="invites" className="flex flex-col">
-        <TeamInvitesTable
-          teamInvites={teamInvites}
-          isLoading={isLoadingInvites}
-        />
-      </TabsContent>
-    </Tabs>
+      <TeamTabs
+        teamMembers={teamMembers}
+        teamInvites={teamInvites}
+        isLoadingMembers={isLoading}
+        isLoadingInvites={isLoadingInvites}
+      />
+
+      <TeamDialogs
+        dialogType={dialog.type}
+        dialogData={dialog.data}
+        onClose={closeDialog}
+        onConfirmRemove={handleConfirmRemove}
+        onConfirmToggle={handleConfirmToggle}
+      />
+    </div>
   );
 };
-
-export default TeamsPage;
