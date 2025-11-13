@@ -22,3 +22,11 @@ export interface TeamMember {
   created_at: string; // ISO 8601 timestamp for when the member was added
   last_modified_at: string; // ISO 8601 timestamp for last modification
 }
+
+export interface TeamInvitation {
+  id: string;
+  team: Team;
+  email_address: string; // Email address of the invited user
+  role: "ADMIN" | "MEMBER" | string; // Role assigned to the user
+  invited_by: string; // UUID of the user who sent the invitation
+}

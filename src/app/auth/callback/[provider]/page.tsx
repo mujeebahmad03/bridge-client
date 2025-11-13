@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { API_ROUTES } from "@/config/api-routes";
+import { AUTH_ROUTES } from "@/config/app-route";
 import { apiClient } from "@/lib/api-client";
 import { env } from "@/lib/env";
 import { TokenStorage } from "@/lib/token-manager";
@@ -196,7 +197,7 @@ export default function OAuthCallbackPage({
             {/* Retry button for errors */}
             {state.status === "error" && (
               <button
-                onClick={() => (window.location.href = "/login")}
+                onClick={() => (window.location.href = AUTH_ROUTES.LOGIN)}
                 className="w-full mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
               >
                 Back to Login

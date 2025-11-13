@@ -5,7 +5,7 @@ import { apiClient } from "@/lib/api-client";
 
 import { useTeamSwitcher } from "@/layout/hooks";
 import { TEAM_QUERY_KEYS } from "@/teams/constants";
-import type { Team, TeamMember } from "@/teams/types";
+import type { Team, TeamInvitation, TeamMember } from "@/teams/types";
 import { getTeamLogo } from "@/teams/utils";
 
 export const useGetTeams = () => {
@@ -51,6 +51,31 @@ export const useGetTeamMembers = () => {
 
   return {
     teamMembers: data ?? [],
+    error,
+    refetch,
+    isLoading,
+  };
+};
+
+export const useGetTeamInvites = () => {
+  const { currentTeamId } = useTeamSwitcher();
+
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: TEAM_QUERY_KEYS.invites(currentTeamId ?? ""),
+    queryFn: async () =>
+      apiClient.get<{ results: TeamInvitation[] }>(
+        API_ROUTES.INVITE.GET_INVITES(currentTeamId ?? "")
+      ),
+    select: (data) => data.data?.results,
+    staleTime: Infinity,
+    gcTime: Infinity,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    enabled: !!currentTeamId,
+  });
+
+  return {
+    teamInvites: data ?? [],
     error,
     refetch,
     isLoading,
