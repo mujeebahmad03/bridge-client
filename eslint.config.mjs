@@ -1,13 +1,9 @@
 import { defineConfig, globalIgnores } from "eslint/config";
-import typescriptPlugin from "@typescript-eslint/eslint-plugin";
 import typescriptParser from "@typescript-eslint/parser";
 import checkFilePlugin from "eslint-plugin-check-file";
-import prettierConfig from "eslint-config-prettier";
 import importPlugin from "eslint-plugin-import";
-import jsxA11yPlugin from "eslint-plugin-jsx-a11y";
 import prettierPlugin from "eslint-plugin-prettier";
 import reactPlugin from "eslint-plugin-react";
-import reactHooksPlugin from "eslint-plugin-react-hooks";
 import simpleImportSortPlugin from "eslint-plugin-simple-import-sort";
 import unusedImportsPlugin from "eslint-plugin-unused-imports";
 import nextVitals from "eslint-config-next/core-web-vitals";
@@ -67,7 +63,6 @@ const eslintConfig = defineConfig([
       },
     },
     plugins: {
-      "@typescript-eslint": typescriptPlugin,
       react: reactPlugin,
       import: importPlugin,
       "unused-imports": unusedImportsPlugin,
