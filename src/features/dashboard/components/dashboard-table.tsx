@@ -11,6 +11,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { ContactEvents } from "./contact-events";
+import { TodaysTask } from "./todays-task";
 
 export function DashboardTable() {
   return (
@@ -49,7 +50,7 @@ export function DashboardTable() {
         <ContactEvents />
       </TabsContent>
       <TabsContent value="tasks" className="flex flex-col">
-        <div className="aspect-video w-full flex-1 rounded-lg border border-dashed" />
+        <TodaysTask />
       </TabsContent>
       <TabsContent value="suggestions" className="flex flex-col">
         <div className="aspect-video w-full flex-1 rounded-lg border border-dashed" />

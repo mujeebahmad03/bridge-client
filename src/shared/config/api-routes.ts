@@ -37,6 +37,8 @@ export const API_ROUTES = {
   },
   DASHBOARD: {
     GET_CONTACT_EVENTS: "contacts/contact-events/",
-    GET_TASKS: "tasks/tasks/",
+  },
+  TASKS: {
+    GET_TASKS: "users/tasks/",
   },
 } as const;

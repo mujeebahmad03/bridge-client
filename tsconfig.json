@@ -27,6 +27,7 @@
       "@/layout/*": ["./src/features/common/layout/*"],
       "@/hooks/*": ["./src/shared/hooks/*"],
       "@/config/*": ["./src/shared/config/*"],
+      "@/tasks/*": ["./src/features/tasks/*"],
       "@/teams/*": ["./src/features/teams/*"],
       "@/dashboard/*": ["./src/features/dashboard/*"],
       "@/types/*": ["./src/shared/types/*"],
