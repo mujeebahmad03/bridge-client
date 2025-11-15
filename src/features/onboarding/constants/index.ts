@@ -36,4 +36,4 @@ export const companySizeOptions = [
 
 export const salesRepsOptions = ["1", "2–5", "6–10", "11–50", "50+"] as const;
 
-export const teamRoles = ["ADMIN", "MEMBER"] as const;
+export const teamRoles = ["ADMIN", "SUBUSER"] as const;

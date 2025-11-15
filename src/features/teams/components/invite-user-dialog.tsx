@@ -35,7 +35,7 @@ export function InviteUserDialog({
   const form = useForm<InviteFormData>({
     resolver: zodResolver(inviteFormSchema),
     defaultValues: {
-      invites: [{ email: "", role: "MEMBER" }],
+      invites: [{ email: "", role: "SUBUSER" }],
     },
   });
 
@@ -47,7 +47,7 @@ export function InviteUserDialog({
   });
 
   const addInviteRow = () => {
-    append({ email: "", role: "MEMBER" });
+    append({ email: "", role: "SUBUSER" });
   };
 
   const removeInviteRow = (index: number) => {
@@ -66,7 +66,7 @@ export function InviteUserDialog({
       });
 
       form.reset({
-        invites: [{ email: "", role: "MEMBER" }],
+        invites: [{ email: "", role: "SUBUSER" }],
       });
       onOpenChange(false);
     } catch (error) {
@@ -79,7 +79,7 @@ export function InviteUserDialog({
       onOpenChange(newOpen);
       if (!newOpen) {
         form.reset({
-          invites: [{ email: "", role: "MEMBER" }],
+          invites: [{ email: "", role: "SUBUSER" }],
         });
       }
     }

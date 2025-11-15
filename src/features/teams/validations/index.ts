@@ -9,7 +9,7 @@ export type CreateTeamFormData = z.infer<typeof createTeamSchema>;
 // Zod schema for individual invite
 export const inviteSchema = z.object({
   email: z.email("Invalid email address"),
-  role: z.enum(["ADMIN", "MEMBER"]),
+  role: z.enum(["ADMIN", "SUBUSER"]),
 });
 
 // Schema for the entire invites array with duplicate checking

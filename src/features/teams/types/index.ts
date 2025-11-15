@@ -24,7 +24,9 @@ export interface TeamMember {
 }
 
 export type TeamInvitationStatus = "PENDING" | "ACCEPTED" | "REJECTED";
-export type TeamInvitationRole = "ADMIN" | "MEMBER" | string;
+
+export type TeamInvitationRole = "ADMIN" | "SUBUSER" | string;
+
 export interface TeamInvitation {
   id: string;
   team: Team;
@@ -34,7 +36,7 @@ export interface TeamInvitation {
   status: TeamInvitationStatus; // Status of the invitation
 }
 
-export type InviteRole = "ADMIN" | "MEMBER";
+export type InviteRole = "ADMIN" | "SUBUSER";
 
 export interface InviteEntry {
   email: string;

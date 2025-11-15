@@ -63,11 +63,9 @@ export const useGetTeamInvites = () => {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: TEAM_QUERY_KEYS.invites(currentTeamId ?? ""),
     queryFn: async () =>
-      apiClient.get<{ results: TeamInvitation[] }>(
-        API_ROUTES.INVITE.GET_INVITES,
-        { params: { team: currentTeamId ?? "" } }
-      ),
-    select: (data) => data.data?.results,
+      apiClient.get<TeamInvitation[]>(API_ROUTES.INVITE.GET_INVITES, {
+        params: { team: currentTeamId },
+      }),
     staleTime: Infinity,
     gcTime: Infinity,
     refetchOnMount: false,
@@ -76,7 +74,7 @@ export const useGetTeamInvites = () => {
   });
 
   return {
-    teamInvites: data ?? [],
+    teamInvites: data?.data ?? [],
     error,
     refetch,
     isLoading,

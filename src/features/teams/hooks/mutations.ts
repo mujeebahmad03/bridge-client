@@ -39,6 +39,7 @@ export const useInviteUser = () => {
         data.invites.map((invite) => ({
           email_address: invite.email,
           role: invite.role,
+          team: currentTeamId,
         }))
       ),
     onSuccess: () => {
