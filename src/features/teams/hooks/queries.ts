@@ -64,7 +64,8 @@ export const useGetTeamInvites = () => {
     queryKey: TEAM_QUERY_KEYS.invites(currentTeamId ?? ""),
     queryFn: async () =>
       apiClient.get<{ results: TeamInvitation[] }>(
-        API_ROUTES.INVITE.GET_INVITES(currentTeamId ?? "")
+        API_ROUTES.INVITE.GET_INVITES,
+        { params: { team: currentTeamId ?? "" } }
       ),
     select: (data) => data.data?.results,
     staleTime: Infinity,

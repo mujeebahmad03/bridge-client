@@ -25,7 +25,7 @@ export const API_ROUTES = {
       `users/teams/${teamId}/remove-member/${userId}/` as const,
   },
   INVITE: {
-    GET_INVITES: (teamId: string) => `users/teams/${teamId}/invites/` as const,
+    GET_INVITES: "users/teams-invites/",
     SEND_INVITE: (teamId: string) => `teams/${teamId}/invite-users/` as const,
     RESEND_INVITE: (id: string) =>
       `users/team-invites/${id}/resend-invite/` as const,
@@ -36,6 +36,7 @@ export const API_ROUTES = {
   },
   DASHBOARD: {
     GET_CONTACT_EVENTS: "contacts/contact-events/",
+    STATS: "reports/",
   },
   TASKS: {
     GET_TASKS: "users/tasks/",
