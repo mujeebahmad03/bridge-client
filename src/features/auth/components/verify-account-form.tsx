@@ -93,9 +93,10 @@ export const VerifyAccountForm = () => {
           <p className="text-sm text-muted-foreground">
             Didn&apos;t receive the email? Check your spam folder or{" "}
             <button
+              type="button"
               onClick={handleResend}
               disabled={isResendingOTP}
-              className="font-medium text-primary hover:underline"
+              className="font-medium text-primary hover:underline cursor-pointer"
             >
               resend
             </button>
