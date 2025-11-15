@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
 import { Mail, User } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useForm, useWatch } from "react-hook-form";
 
 import { CheckboxFormField, InputFormField } from "@/components/form-fields";
@@ -21,13 +22,14 @@ import {
   PasswordField,
   PasswordStrengthIndicator,
 } from "./shared";
-import { SignUpSuccess } from "./sign-up-success";
 import { containerVariants, itemVariants } from "@/auth/config";
 import { type SignUpFormData, signUpSchema } from "@/auth/validations";
 
 export const SignUpForm = () => {
   useGuestOnly();
-  const { signUp, isSigningUp, signUpError, signUpData } = useAuth();
+  const { signUp, isSigningUp, signUpError } = useAuth();
+
+  const { push } = useRouter();
 
   const { setValue } = useLocalStorage<{ email: string } | null>(
     "emailForVerification",
@@ -55,14 +57,13 @@ export const SignUpForm = () => {
     try {
       await signUp(data);
       setValue({ email: data.email });
+      push(AUTH_ROUTES.VERIFY_ACCOUNT);
     } catch (e) {
       console.error(e);
     }
   };
 
-  return signUpData ? (
-    <SignUpSuccess />
-  ) : (
+  return (
     <motion.div variants={containerVariants} initial="hidden" animate="visible">
       <motion.div variants={itemVariants} className="mb-8">
         <h1 className="mb-2 text-3xl font-bold text-foreground">
@@ -171,7 +172,7 @@ export const SignUpForm = () => {
               form={form}
               name="marketingEmails"
               label="I'd like to receive marketing emails about Bridge
-                      updates and features"
+                  updates and features"
             />
           </motion.div>
 

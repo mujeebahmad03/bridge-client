@@ -19,11 +19,26 @@ import {
 
 export const VerifyAccountForm = () => {
   useGuestOnly();
-  const { verifyAccount, isVerifyingAccount, verifyAccountError } = useAuth();
+  const {
+    resendOTP,
+    isResendingOTP,
+    verifyAccount,
+    isVerifyingAccount,
+    verifyAccountError,
+  } = useAuth();
+
   const { value } = useLocalStorage<{ email: string } | null>(
     "emailForVerification",
     null
   );
+
+  const handleResend = async () => {
+    try {
+      await resendOTP({ email_address: value?.email ?? "" });
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   const form = useForm<VerifyAccountFormData>({
     resolver: zodResolver(verifyAccountSchema),
@@ -74,6 +89,17 @@ export const VerifyAccountForm = () => {
           >
             Verify Account
           </LoadingButton>
+
+          <p className="text-sm text-muted-foreground">
+            Didn&apos;t receive the email? Check your spam folder or{" "}
+            <button
+              onClick={handleResend}
+              disabled={isResendingOTP}
+              className="font-medium text-primary hover:underline"
+            >
+              resend
+            </button>
+          </p>
         </motion.form>
       </Form>
     </motion.div>
