@@ -33,3 +33,10 @@ export interface TeamInvitation {
   invited_by: string; // UUID of the user who sent the invitation
   status: TeamInvitationStatus; // Status of the invitation
 }
+
+export type InviteRole = "ADMIN" | "MEMBER";
+
+export interface InviteEntry {
+  email: string;
+  role: InviteRole;
+}

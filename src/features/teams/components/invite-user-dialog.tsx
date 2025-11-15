@@ -1,7 +1,12 @@
+"use client";
+
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, X } from "lucide-react";
-import { useState } from "react";
+import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
+import { InputFormField } from "@/components/form-fields";
+import { SelectFormField } from "@/components/form-fields/select-form-fiel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,86 +17,82 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Form } from "@/components/ui/form";
 
 import { teamRoles } from "@/onboarding/constants";
+import { useInviteUser } from "@/teams/hooks";
+import { type InviteFormData, inviteFormSchema } from "@/teams/validations";
 
 interface InviteUserDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-interface InviteEntry {
-  email: string;
-  role: "ADMIN" | "MEMBER";
-}
-
 export function InviteUserDialog({
   open,
   onOpenChange,
 }: InviteUserDialogProps) {
-  const [invites, setInvites] = useState<InviteEntry[]>([
-    { email: "", role: "MEMBER" },
-  ]);
-  const [isLoading, setIsLoading] = useState(false);
+  const form = useForm<InviteFormData>({
+    resolver: zodResolver(inviteFormSchema),
+    defaultValues: {
+      invites: [{ email: "", role: "MEMBER" }],
+    },
+  });
+
+  const { inviteUser, isInvitingUser } = useInviteUser();
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "invites",
+  });
 
   const addInviteRow = () => {
-    setInvites([...invites, { email: "", role: "MEMBER" }]);
+    append({ email: "", role: "MEMBER" });
   };
 
   const removeInviteRow = (index: number) => {
-    if (invites.length > 1) {
-      setInvites(invites.filter((_, i) => i !== index));
+    if (fields.length > 1) {
+      remove(index);
     }
   };
 
-  const updateInvite = (
-    index: number,
-    field: keyof InviteEntry,
-    value: string
-  ) => {
-    const newInvites = [...invites];
-    newInvites[index] = { ...newInvites[index], [field]: value };
-    setInvites(newInvites);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const validInvites = invites.filter((inv) => inv.email.trim() !== "");
-
-    if (validInvites.length === 0) {
-      toast.error("No invites to send", {
-        description: "Please enter at least one email address",
-      });
-      return;
-    }
-
-    setIsLoading(true);
-
-    // Simulate sending invites
-    setTimeout(() => {
-      setIsLoading(false);
+  const handleSubmit = async (values: InviteFormData) => {
+    try {
+      await inviteUser(values);
       toast.success("Invites sent!", {
-        description: `Successfully sent ${validInvites.length} invite${
-          validInvites.length !== 1 ? "s" : ""
+        description: `Successfully sent ${values.invites.length} invite${
+          values.invites.length !== 1 ? "s" : ""
         }`,
       });
-      setInvites([{ email: "", role: "MEMBER" }]);
+
+      form.reset({
+        invites: [{ email: "", role: "MEMBER" }],
+      });
       onOpenChange(false);
-    }, 1000);
+    } catch (error) {
+      console.error(error);
+    }
   };
 
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!isInvitingUser) {
+      onOpenChange(newOpen);
+      if (!newOpen) {
+        form.reset({
+          invites: [{ email: "", role: "MEMBER" }],
+        });
+      }
+    }
+  };
+
+  const watchedInvites = useWatch({
+    control: form.control,
+    name: "invites",
+  });
+  const validInvites = watchedInvites.filter((inv) => inv.email.trim() !== "");
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>Invite Team Members</DialogTitle>
@@ -100,101 +101,103 @@ export function InviteUserDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 py-4">
-          <div className="space-y-3">
-            {invites.map((invite, index) => (
-              <div key={invite.email} className="flex items-center gap-2">
-                <div className="flex-1 space-y-2">
-                  <Label htmlFor={`email-${index}`}>
-                    Email {invites.length > 1 && `#${index + 1}`}
-                  </Label>
-                  <Input
-                    id={`email-${index}`}
-                    type="email"
-                    placeholder="colleague@example.com"
-                    value={invite.email}
-                    onChange={(e) =>
-                      updateInvite(index, "email", e.target.value)
-                    }
-                  />
-                </div>
-                <div className="w-32 space-y-2">
-                  <Label htmlFor={`role-${index}`}>Role</Label>
-                  <Select
-                    value={invite.role}
-                    onValueChange={(value) =>
-                      updateInvite(index, "role", value as "ADMIN" | "MEMBER")
-                    }
-                  >
-                    <SelectTrigger id={`role-${index}`}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {teamRoles.map((role) => (
-                        <SelectItem key={role} value={role}>
-                          {role}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                {invites.length > 1 && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeInviteRow(index)}
-                    className="mb-0.5"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-            ))}
-          </div>
-
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={addInviteRow}
-            className="w-full"
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(handleSubmit)}
+            className="space-y-4 py-4"
           >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Another Invite
-          </Button>
-
-          {invites.filter((inv) => inv.email).length > 0 && (
-            <div className="rounded-lg border bg-muted/50 p-3">
-              <p className="text-sm font-medium mb-2">
-                Ready to send {invites.filter((inv) => inv.email).length} invite
-                {invites.filter((inv) => inv.email).length !== 1 ? "s" : ""}:
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {invites
-                  .filter((inv) => inv.email)
-                  .map((inv) => (
-                    <Badge key={inv.email} variant="secondary">
-                      {inv.email} - {inv.role}
-                    </Badge>
-                  ))}
-              </div>
+            <div className="space-y-3">
+              {fields.map((field, index) => (
+                <div key={field.id} className="flex items-start gap-2">
+                  <div className="flex-1 space-y-2">
+                    <InputFormField
+                      form={form}
+                      name={`invites.${index}.email`}
+                      type="email"
+                      label="Email"
+                      placeholder="colleague@example.com"
+                    />
+                  </div>
+                  <div className="w-32 space-y-2">
+                    <SelectFormField
+                      control={form.control}
+                      label="Role"
+                      name={`invites.${index}.role`}
+                      options={teamRoles.map((role) => ({
+                        label: role,
+                        value: role,
+                      }))}
+                      getLabel={(role) => role.label}
+                      getValue={(role) => role.value}
+                    />
+                  </div>
+                  {fields.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeInviteRow(index)}
+                      className="mt-8"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              ))}
             </div>
-          )}
 
-          <DialogFooter>
+            {/* Display root-level validation errors (e.g., duplicates) */}
+            {form.formState.errors.invites &&
+              (form.formState.errors.invites.message ??
+                form.formState.errors.invites.root?.message) && (
+                <div className="text-sm text-destructive">
+                  {form.formState.errors.invites.message ??
+                    form.formState.errors.invites.root?.message}
+                </div>
+              )}
+
             <Button
               type="button"
               variant="outline"
-              onClick={() => onOpenChange(false)}
+              size="sm"
+              onClick={addInviteRow}
+              className="w-full"
             >
-              Cancel
+              <Plus className="h-4 w-4 mr-2" />
+              Add Another Invite
             </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? "Sending..." : "Send Invites"}
-            </Button>
-          </DialogFooter>
-        </form>
+
+            {validInvites.length > 0 && (
+              <div className="rounded-lg border bg-muted/50 p-3">
+                <p className="text-sm font-medium mb-2">
+                  Ready to send {validInvites.length} invite
+                  {validInvites.length !== 1 ? "s" : ""}:
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {validInvites.map((inv) => (
+                    <Badge key={`${inv.email}-${inv.role}`} variant="secondary">
+                      {inv.email} - {inv.role}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => handleOpenChange(false)}
+                disabled={isInvitingUser}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isInvitingUser}>
+                {isInvitingUser ? "Sending..." : "Send Invites"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );

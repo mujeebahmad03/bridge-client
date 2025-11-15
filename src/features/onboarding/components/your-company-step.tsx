@@ -38,7 +38,7 @@ export function YourCompanyStep({ data, onChange }: YourCompanyStepProps) {
   const addTeamMember = (): void => {
     onChange("teamMembers", [
       ...data.teamMembers,
-      { email: "", role: "Member" },
+      { email: "", role: "MEMBER" },
     ]);
   };
 

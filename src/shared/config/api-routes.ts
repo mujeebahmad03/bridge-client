@@ -26,8 +26,7 @@ export const API_ROUTES = {
   },
   INVITE: {
     GET_INVITES: (teamId: string) => `users/teams/${teamId}/invites/` as const,
-    SEND_INVITE: (teamId: string) =>
-      `users/teams/${teamId}/invite-user/` as const,
+    SEND_INVITE: (teamId: string) => `teams/${teamId}/invite-users/` as const,
     RESEND_INVITE: (id: string) =>
       `users/team-invites/${id}/resend-invite/` as const,
     ACCEPT_INVITE: (id: string) =>
