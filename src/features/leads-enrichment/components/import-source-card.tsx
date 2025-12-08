@@ -6,7 +6,6 @@ import {
   Lock,
   Users,
 } from "lucide-react";
-import { forwardRef } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -24,12 +23,16 @@ type IconName = keyof typeof iconMap;
 interface ImportSourceCardProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   source: ImportSource;
   variant?: "default" | "compact";
+  ref?: React.Ref<HTMLButtonElement>;
 }
 
-export const ImportSourceCard = forwardRef<
-  HTMLButtonElement,
-  ImportSourceCardProps
->(({ source, variant = "default", className, ...props }, ref) => {
+export const ImportSourceCard = ({
+  source,
+  variant = "default",
+  className,
+  ref,
+  ...props
+}: ImportSourceCardProps) => {
   const IconComponent = iconMap[source.icon as IconName] ?? FileSpreadsheet;
   const isCompact = variant === "compact";
 
@@ -98,6 +101,6 @@ export const ImportSourceCard = forwardRef<
       )}
     </button>
   );
-});
+};
 
 ImportSourceCard.displayName = "ImportSourceCard";

@@ -9,7 +9,6 @@ import {
   Sparkles,
   TrendingUp,
 } from "lucide-react";
-import { forwardRef } from "react";
 
 import { Badge } from "@/components/ui/badge";
 
@@ -38,12 +37,15 @@ const categoryColors: Record<WorkflowCategory, string> = {
 
 interface WorkflowTemplateCardProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   template: WorkflowTemplate;
+  ref?: React.Ref<HTMLButtonElement>;
 }
 
-export const WorkflowTemplateCard = forwardRef<
-  HTMLButtonElement,
-  WorkflowTemplateCardProps
->(({ template, className, ...props }, ref) => {
+export const WorkflowTemplateCard = ({
+  template,
+  className,
+  ref,
+  ...props
+}: WorkflowTemplateCardProps) => {
   const IconComponent = iconMap[template.icon as IconName] ?? Sparkles;
 
   return (
@@ -99,6 +101,6 @@ export const WorkflowTemplateCard = forwardRef<
       </div>
     </button>
   );
-});
+};
 
 WorkflowTemplateCard.displayName = "WorkflowTemplateCard";

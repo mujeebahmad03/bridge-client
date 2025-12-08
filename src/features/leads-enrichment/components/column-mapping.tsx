@@ -1,5 +1,6 @@
 import { Check, ChevronsUpDown, Plus, X } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
+import { v7 } from "uuid";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -157,8 +158,8 @@ export function ColumnMapper({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {preview.slice(0, 3).map((row, index) => (
-                  <TableRow key={index}>
+                {preview.slice(0, 3).map((row) => (
+                  <TableRow key={v7()}>
                     {sourceFields.slice(0, 5).map((field) => (
                       <TableCell
                         key={field}
