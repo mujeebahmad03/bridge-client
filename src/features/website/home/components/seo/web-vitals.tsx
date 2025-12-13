@@ -13,9 +13,8 @@ export function WebVitals() {
     // Core Web Vitals tracking
     const trackWebVitals = async () => {
       try {
-        const { onCLS, onINP, onFCP, onLCP, onTTFB } = await import(
-          "web-vitals"
-        );
+        const { onCLS, onINP, onFCP, onLCP, onTTFB } =
+          await import("web-vitals");
 
         const sendToAnalytics = (metric: any) => {
           // Send to your analytics service

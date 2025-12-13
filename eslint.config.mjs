@@ -8,6 +8,7 @@ import simpleImportSortPlugin from "eslint-plugin-simple-import-sort";
 import unusedImportsPlugin from "eslint-plugin-unused-imports";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
+import prettierConfig from "eslint-config-prettier";
 import { dirname } from "path";
 import { fileURLToPath } from "url";
 
@@ -17,6 +18,13 @@ const __dirname = dirname(__filename);
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  // Disable ESLint rules that conflict with Prettier
+  // This must come after other configs to properly override them
+  {
+    rules: {
+      ...prettierConfig.rules,
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:
@@ -99,8 +107,13 @@ const eslintConfig = defineConfig([
       },
     },
     rules: {
-      // Prettier integration
-      "prettier/prettier": "error",
+      // Prettier integration - use Prettier config from .prettierrc.json
+      "prettier/prettier": [
+        "error",
+        {
+          // Prettier options will be read from .prettierrc.json automatically
+        },
+      ],
 
       // === FILE NAMING ENFORCEMENT (KEBAB-CASE) ===
       "check-file/filename-naming-convention": [
