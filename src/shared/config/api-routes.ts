@@ -43,4 +43,46 @@ export const API_ROUTES = {
   TASKS: {
     GET_TASKS: "users/tasks/",
   },
+  CUSTOM_FIELDS: {
+    GET_USER_CUSTOM_FIELDS: "contacts/feature-field/",
+    CREATE_USER_CUSTOM_FIELD: "contacts/feature-field/",
+    UPDATE_USER_CUSTOM_FIELD: (id: string) =>
+      `contacts/feature-field/${id}/` as const,
+    DELETE_USER_CUSTOM_FIELD: (id: string) =>
+      `contacts/feature-field/${id}/` as const,
+  },
+  CONTACTS_IMPORT: {
+    GET_IMPORT_HISTORY: "contacts/import/",
+    CREATE_IMPORT: "contacts/import/",
+  },
+  LEADS_ENRICHMENT: {
+    GET_PRESET: "contacts/enrichment/presets/",
+  },
+  ENRICHMENT: {
+    CREATE_ENRICHMENT: "contacts/enrichment/preview/",
+    APPROVE_ENRICHMENT: (id: string) =>
+      `contacts/enrichment/${id}/approve/` as const,
+    APPLY_ENRICHMENT: (id: string) =>
+      `contacts/enrichment/${id}/apply_results/` as const,
+    GET_ENRICHMENT_RESULTS: (id: string) =>
+      `contacts/enrichment/${id}/results/` as const,
+    GET_ENRICHMENT_STATUS: (id: string) =>
+      `contacts/enrichment/${id}/status/` as const,
+    GET_ENRICHMENT_REQUESTS: "contacts/enrichment/",
+  },
+  CONTACTS: {
+    GET_CONTACT_DATA_TABLE: "contacts/datatable/contacts-datatable/",
+    GET_CONTACTS: "contacts/",
+    GET_CONTACT: (id: string) => `contacts/${id}/` as const,
+    CREATE_CONTACT: "contacts/",
+    UPDATE_CONTACT: (id: string) => `contacts/${id}/` as const,
+    DELETE_CONTACT: (id: string) => `contacts/${id}/` as const,
+  },
+  CONTACT_TAGS: {
+    GET_CONTACT_TAGS: "contacts/tags/",
+    CREATE_CONTACT_TAG: "contacts/tags/",
+    GET_CONTACT_TAG: (id: string) => `contacts/tags/${id}/` as const,
+    UPDATE_CONTACT_TAG: (id: string) => `contacts/tags/${id}/` as const,
+    DELETE_CONTACT_TAG: (id: string) => `contacts/tags/${id}/` as const,
+  },
 } as const;

@@ -337,6 +337,26 @@ class ApiClient {
     // });
   }
 
+  /**
+   * Type guard: value is DRF-style field validation errors { [field]: string[] }
+   */
+  private isDrfFieldErrors(value: unknown): value is Record<string, string[]> {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      return false;
+    }
+    const o = value as Record<string, unknown>;
+    const keys = Object.keys(o);
+    if (keys.length === 0) {
+      return false;
+    }
+    return keys.every(
+      (k) =>
+        Array.isArray(o[k]) &&
+        (o[k] as unknown[]).length > 0 &&
+        (o[k] as unknown[]).every((x) => typeof x === "string")
+    );
+  }
+
   private transformError(
     error: AxiosError<ApiResponse | ErrorResponse>
   ): ApiError {
@@ -391,6 +411,13 @@ class ApiClient {
           undefined,
           error
         );
+      } else if (this.isDrfFieldErrors(responseData)) {
+        // DRF validation: { [field]: string[] }
+        const fields: Record<string, string[]> = responseData;
+        const firstMessages: string[] = Object.values(fields).flat();
+        const detail: string = firstMessages[0] ?? "Validation error";
+        const statusCode: number = error.response?.status ?? 400;
+        return new ApiError(statusCode, detail, undefined, fields, error);
       }
     }
 

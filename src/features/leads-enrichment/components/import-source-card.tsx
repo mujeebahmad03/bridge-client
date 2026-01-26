@@ -23,22 +23,19 @@ type IconName = keyof typeof iconMap;
 interface ImportSourceCardProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   source: ImportSource;
   variant?: "default" | "compact";
-  ref?: React.Ref<HTMLButtonElement>;
 }
 
-export const ImportSourceCard = ({
+export function ImportSourceCard({
   source,
   variant = "default",
   className,
-  ref,
   ...props
-}: ImportSourceCardProps) => {
+}: ImportSourceCardProps) {
   const IconComponent = iconMap[source.icon as IconName] ?? FileSpreadsheet;
   const isCompact = variant === "compact";
 
   return (
     <button
-      ref={ref}
       disabled={!source.enabled}
       className={cn(
         "group relative flex items-center gap-4 rounded-lg border border-border bg-card p-4 text-left transition-all duration-200",
@@ -101,6 +98,4 @@ export const ImportSourceCard = ({
       )}
     </button>
   );
-};
-
-ImportSourceCard.displayName = "ImportSourceCard";
+}

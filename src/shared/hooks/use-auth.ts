@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { toast } from "sonner";
 
 import { API_ROUTES } from "@/config/api-routes";
@@ -245,25 +246,31 @@ export function useAuth() {
 }
 
 // Utility hook for protected routes
+// Note: Server-side guards in layouts are preferred, but this can be used for client-side checks
 export function useRequireAuth() {
   const { isAuthenticated, isLoadingUser } = useAuth();
   const router = useRouter();
 
-  if (!isLoadingUser && !isAuthenticated) {
-    router.push(AUTH_ROUTES.LOGIN);
-  }
+  useEffect(() => {
+    if (!isLoadingUser && !isAuthenticated) {
+      router.replace(AUTH_ROUTES.LOGIN);
+    }
+  }, [isAuthenticated, isLoadingUser, router]);
 
   return { isAuthenticated, isLoadingUser };
 }
 
 // Utility hook for guest-only routes (login, signup)
+// Note: Server-side guards in layouts are preferred, but this can be used for client-side checks
 export function useGuestOnly() {
   const { isAuthenticated, isLoadingUser } = useAuth();
   const router = useRouter();
 
-  if (!isLoadingUser && isAuthenticated) {
-    router.push(DASHBOARD_ROUTES.OVERVIEW);
-  }
+  useEffect(() => {
+    if (!isLoadingUser && isAuthenticated) {
+      router.replace(DASHBOARD_ROUTES.OVERVIEW);
+    }
+  }, [isAuthenticated, isLoadingUser, router]);
 
   return { isAuthenticated, isLoadingUser };
 }

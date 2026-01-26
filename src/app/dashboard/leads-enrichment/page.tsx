@@ -1,8 +1,8 @@
 import { DASHBOARD_ROUTES } from "@/config/app-route";
 
-import { DashboardContent } from "@/layout/components";
+import { DashboardContent, MainLayout } from "@/layout/components";
 import { type CrumbItem } from "@/layout/types";
-import { LeadsEnrichmentPage } from "@/leads/page";
+import { LeadsEnrichmentPage } from "@/leads/pages";
 
 const breadcrumbs: CrumbItem[] = [
   {
@@ -19,9 +19,11 @@ const currentPage = "Leads Enrichment";
 
 const LeadsEnrichment = () => {
   return (
-    <DashboardContent breadcrumbs={breadcrumbs} currentPage={currentPage}>
-      <LeadsEnrichmentPage />
-    </DashboardContent>
+    <MainLayout>
+      <DashboardContent breadcrumbs={breadcrumbs} currentPage={currentPage}>
+        <LeadsEnrichmentPage />
+      </DashboardContent>
+    </MainLayout>
   );
 };
 

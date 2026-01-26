@@ -18,7 +18,13 @@ export const TeamTabs = ({
   isLoadingMembers,
   isLoadingInvites,
 }: TeamTabsProps) => {
-  const pendingInvites = teamInvites.filter((i) => i.status === "PENDING");
+  // const pendingInvites = teamInvites
+  //   ? teamInvites?.filter((i) => i.status === "PENDING")
+  //   : [];
+  console.log(
+    "🚀 ~ TeamTabs ~ teamInvites:",
+    JSON.stringify(teamInvites, null, 2)
+  );
 
   return (
     <Tabs
@@ -37,7 +43,7 @@ export const TeamTabs = ({
           <Mail className="h-4 w-4" />
           Invites
           <span className="ml-1 rounded-full bg-background px-2 py-0.5 text-xs">
-            {pendingInvites.length}
+            {/* {pendingInvites.length} */}
           </span>
         </TabsTrigger>
       </TabsList>

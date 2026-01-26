@@ -27,4 +27,5 @@ export const DASHBOARD_ROUTES = {
   TEAMS: `${baseDashboardRoute}/teams`,
   TEMPLATES: `${baseDashboardRoute}/templates`,
   SETTINGS: `${baseDashboardRoute}/settings`,
+  PROFILE: `${baseDashboardRoute}/profile`,
 } as const;

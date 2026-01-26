@@ -37,20 +37,17 @@ const categoryColors: Record<WorkflowCategory, string> = {
 
 interface WorkflowTemplateCardProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   template: WorkflowTemplate;
-  ref?: React.Ref<HTMLButtonElement>;
 }
 
-export const WorkflowTemplateCard = ({
+export function WorkflowTemplateCard({
   template,
   className,
-  ref,
   ...props
-}: WorkflowTemplateCardProps) => {
+}: WorkflowTemplateCardProps) {
   const IconComponent = iconMap[template.icon as IconName] ?? Sparkles;
 
   return (
     <button
-      ref={ref}
       className={cn(
         "group relative flex flex-col rounded-xl border border-border bg-card p-5 text-left transition-all duration-200",
         "hover:border-primary/50 hover:shadow-medium hover:-translate-y-0.5",
@@ -101,6 +98,4 @@ export const WorkflowTemplateCard = ({
       </div>
     </button>
   );
-};
-
-WorkflowTemplateCard.displayName = "WorkflowTemplateCard";
+}

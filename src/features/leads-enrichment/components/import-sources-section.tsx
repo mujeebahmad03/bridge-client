@@ -1,11 +1,14 @@
+"use client";
+
 import { Plus, Upload } from "lucide-react";
-import { useState } from "react";
 
 import { cn } from "@/lib/utils";
 
 import { FileUploadDialog } from "./file-upload-dialog";
 import { ImportSourceCard } from "./import-source-card";
+import { SectionHeader } from "./section-header";
 import { importSources } from "@/leads/data";
+import { useFileUploadStore } from "@/leads/stores";
 
 interface ImportSourcesSectionProps {
   variant?: "prominent" | "compact";
@@ -16,13 +19,11 @@ export function ImportSourcesSection({
   variant = "prominent",
   className,
 }: ImportSourcesSectionProps) {
-  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
-  const [selectedSourceId, setSelectedSourceId] = useState<string | null>(null);
+  const openDialog = useFileUploadStore((state) => state.openDialog);
 
   const handleSourceClick = (sourceId: string) => {
     if (sourceId === "csv-upload") {
-      setSelectedSourceId(sourceId);
-      setIsUploadDialogOpen(true);
+      openDialog();
     }
     // For other integrations, would trigger OAuth flow
   };
@@ -32,19 +33,11 @@ export function ImportSourcesSection({
   if (isProminent) {
     return (
       <section className={cn("animate-fade-up", className)}>
-        <div className="mb-6">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
-              <Upload className="h-5 w-5 text-primary" />
-            </div>
-            <h2 className="text-xl font-semibold text-foreground">
-              Import Your Leads
-            </h2>
-          </div>
-          <p className="text-muted-foreground">
-            Choose how you&apos;d like to bring your contacts into the platform
-          </p>
-        </div>
+        <SectionHeader
+          icon={Upload}
+          title="Import Your Leads"
+          description="Choose how you'd like to bring your contacts into the platform"
+        />
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {importSources.map((source, index) => (
@@ -61,10 +54,7 @@ export function ImportSourcesSection({
           ))}
         </div>
 
-        <FileUploadDialog
-          open={isUploadDialogOpen}
-          onOpenChange={setIsUploadDialogOpen}
-        />
+        <FileUploadDialog />
       </section>
     );
   }
@@ -96,10 +86,7 @@ export function ImportSourcesSection({
           ))}
       </div>
 
-      <FileUploadDialog
-        open={isUploadDialogOpen}
-        onOpenChange={setIsUploadDialogOpen}
-      />
+      <FileUploadDialog />
     </section>
   );
 }

@@ -1,0 +1,142 @@
+import type { SystemField } from "@/leads/types";
+
+export const systemFields: SystemField[] = [
+  {
+    id: "FIRST_NAME",
+    name: "First Name",
+    validatorType: "TEXT",
+    required: true,
+  },
+  {
+    id: "LAST_NAME",
+    name: "Last Name",
+    validatorType: "TEXT",
+    required: true,
+  },
+  {
+    id: "OTHER_NAMES",
+    name: "Other Names",
+    validatorType: "TEXT",
+    required: false,
+  },
+  {
+    id: "EMAIL_ADDRESS",
+    name: "Email Address",
+    validatorType: "EMAIL_ADDRESS",
+    required: false,
+  },
+  {
+    id: "PRIMARY_PHONE_NUMBER",
+    name: "Primary Phone Number",
+    validatorType: "PHONE",
+    required: false,
+  },
+  {
+    id: "LINKEDIN_PROFILE",
+    name: "LinkedIn Profile",
+    validatorType: "URL",
+    required: false,
+  },
+  {
+    id: "ADDRESS_LINE_1",
+    name: "Address Line 1",
+    validatorType: "TEXT",
+    required: false,
+  },
+  {
+    id: "ADDRESS_LINE_2",
+    name: "Address Line 2",
+    validatorType: "TEXT",
+    required: false,
+  },
+  {
+    id: "STREET",
+    name: "Street",
+    validatorType: "TEXT",
+    required: false,
+  },
+  {
+    id: "CITY",
+    name: "City",
+    validatorType: "TEXT",
+    required: false,
+  },
+  {
+    id: "STATE",
+    name: "State",
+    validatorType: "TEXT",
+    required: false,
+  },
+  {
+    id: "COUNTRY",
+    name: "Country",
+    validatorType: "TEXT",
+    required: false,
+  },
+  {
+    id: "ZIP_CODE",
+    name: "Zip Code",
+    validatorType: "TEXT",
+    required: false,
+  },
+  {
+    id: "PROFILE_IMAGE",
+    name: "Profile Image",
+    validatorType: "URL",
+    required: false,
+  },
+  {
+    id: "COMPANY_NAME",
+    name: "Company Name",
+    validatorType: "TEXT",
+    required: false,
+  },
+  {
+    id: "COMPANY_WEBSITE",
+    name: "Company Website",
+    validatorType: "URL",
+    required: false,
+  },
+  {
+    id: "COMPANY_SOCIAL_PROFILE",
+    name: "Company Social Profile",
+    validatorType: "URL",
+    required: false,
+  },
+  {
+    id: "ACQUISITION_SOURCE",
+    name: "Acquisition Source",
+    validatorType: "TEXT",
+    required: false,
+  },
+  {
+    id: "HEADLINE",
+    name: "Headline",
+    validatorType: "TEXT",
+    required: false,
+  },
+  {
+    id: "DESCRIPTION",
+    name: "Description",
+    validatorType: "TEXT",
+    required: false,
+  },
+  {
+    id: "SUMMARY",
+    name: "Summary",
+    validatorType: "TEXT",
+    required: false,
+  },
+  {
+    id: "SKILLS",
+    name: "Skills",
+    validatorType: "TEXT",
+    required: false,
+  },
+  {
+    id: "INTERESTS",
+    name: "Interests",
+    validatorType: "TEXT",
+    required: false,
+  },
+];

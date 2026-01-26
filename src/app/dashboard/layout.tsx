@@ -1,9 +1,19 @@
-import React from "react";
+import { type ReactNode } from "react";
 
-import { MainLayout } from "@/layout/components";
+import { requireAuth } from "@/lib/server-auth";
 
-const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
-  return <MainLayout>{children}</MainLayout>;
-};
+/**
+ * Server-side layout guard for all dashboard routes
+ * Enforces authentication without wrapping children in MainLayout
+ * (MainLayout should be added per-page or per-segment as needed)
+ */
+export default async function DashboardLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  // Redirect to login if not authenticated
+  await requireAuth();
 
-export default DashboardLayout;
+  return <>{children}</>;
+}

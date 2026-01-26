@@ -1,7 +1,6 @@
 import type {
   EnrichmentHistoryItem,
   ImportSource,
-  SystemField,
   WorkflowTemplate,
 } from "@/leads/types";
 
@@ -20,22 +19,6 @@ export const importSources: ImportSource[] = [
     description: "Import contacts directly from your HubSpot CRM",
     icon: "Database",
     enabled: true,
-    type: "integration",
-  },
-  {
-    id: "salesforce",
-    name: "Salesforce",
-    description: "Sync leads from your Salesforce account",
-    icon: "Cloud",
-    enabled: false,
-    type: "integration",
-  },
-  {
-    id: "pipedrive",
-    name: "Pipedrive",
-    description: "Connect your Pipedrive contacts",
-    icon: "Users",
-    enabled: false,
     type: "integration",
   },
 ];
@@ -155,17 +138,4 @@ export const enrichmentHistory: EnrichmentHistoryItem[] = [
     createdAt: new Date("2024-01-17T08:00:00"),
     completedAt: null,
   },
-];
-
-export const systemFields: SystemField[] = [
-  { id: "first_name", name: "First Name", type: "text", required: true },
-  { id: "last_name", name: "Last Name", type: "text", required: true },
-  { id: "email", name: "Email", type: "email", required: false },
-  { id: "company", name: "Company", type: "text", required: false },
-  { id: "job_title", name: "Job Title", type: "text", required: false },
-  { id: "phone", name: "Phone", type: "phone", required: false },
-  { id: "linkedin_url", name: "LinkedIn URL", type: "url", required: false },
-  { id: "website", name: "Website", type: "url", required: false },
-  { id: "city", name: "City", type: "text", required: false },
-  { id: "country", name: "Country", type: "text", required: false },
 ];
