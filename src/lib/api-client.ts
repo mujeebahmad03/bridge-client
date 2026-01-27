@@ -171,9 +171,12 @@ class ApiClient {
         { refresh: refreshToken }
       );
 
+      const newRefreshToken =
+        env.NODE_ENV === "production" ? response.data.refresh : refreshToken;
+
       if (response.data) {
         const tokens = response.data as TokenPair;
-        await TokenStorage.setTokens({ ...tokens, refresh: refreshToken });
+        await TokenStorage.setTokens({ ...tokens, refresh: newRefreshToken });
         return tokens.access;
       }
 

@@ -33,9 +33,15 @@ export function useContactTableController() {
   const setNavigationModel = useContactsTableStore((s) => s.setNavigationModel);
   const selectAllRows = useContactsTableStore((s) => s.selectAllRows);
   const clearSelection = useContactsTableStore((s) => s.clearSelection);
+  const setSearchValue = useContactsTableStore((s) => s.setSearchValue);
+  const openAddDialog = useContactsTableStore((s) => s.openAddDialog);
 
   // React Query hooks
-  const { data: contacts = [] } = useContactsQuery({ search: searchValue });
+  const {
+    data: contacts = [],
+    isLoading: isLoadingContacts,
+    isFetching: isFetchingContacts,
+  } = useContactsQuery({ search: searchValue });
   const { data: columns = [] } = useContactColumnsQuery();
 
   // Sort contacts based on sortColumn and sortDirection
@@ -335,6 +341,13 @@ export function useContactTableController() {
     pinnedRightColumns,
     columns,
 
+    // Loading state
+    isLoadingContacts,
+    isFetchingContacts,
+
+    // Search state (for empty state)
+    searchValue,
+
     // Virtualization
     virtualizer,
     virtualItems,
@@ -360,5 +373,9 @@ export function useContactTableController() {
     handleTableKeyDown,
     getLeftOffset,
     getRightOffset,
+
+    // Empty state handlers
+    setSearchValue,
+    openAddDialog,
   };
 }

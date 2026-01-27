@@ -29,6 +29,7 @@ async function decryptToken(encryptedToken: string): Promise<string | null> {
   try {
     const encryptionKey = await getEncryptionKey();
     const { payload } = await jwtDecrypt(encryptedToken, encryptionKey);
+
     return payload.data as string;
   } catch (error) {
     // Token is invalid, expired, or decryption failed
@@ -57,6 +58,7 @@ export async function getServerAccessToken(): Promise<string | null> {
  */
 export async function isServerAuthenticated(): Promise<boolean> {
   const token = await getServerAccessToken();
+
   return !!token;
 }
 

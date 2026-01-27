@@ -1,0 +1,12 @@
+/**
+ * Map a custom field id (UUID or `cf-{uuid}`) to its display name.
+ * Uses custom fields from `fetchCustomFields` / `useCustomFields` (results with `id` / `name`).
+ */
+export function mapCustomFieldIdToName(
+  fieldId: string,
+  customFields: Array<{ id: string; name: string }>
+): string {
+  const uuid = fieldId.startsWith("cf-") ? fieldId.slice(3) : fieldId;
+  const found = customFields.find((f) => f.id === uuid || f.id === fieldId);
+  return found ? found.name : fieldId;
+}

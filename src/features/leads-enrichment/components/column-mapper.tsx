@@ -16,7 +16,11 @@ import { MappingPreview } from "./mapping-preview";
 import { systemFields } from "@/leads/constants";
 import { useCreateCustomField, useCustomFields } from "@/leads/hooks";
 import { useFileUploadStore, useUsedTargetFieldIds } from "@/leads/stores";
-import { getSampleValuesForField, inferValidatorType } from "@/leads/utils";
+import {
+  getSampleValuesForField,
+  inferValidatorType,
+  mapCustomFieldIdToName,
+} from "@/leads/utils";
 
 export function ColumnMapper() {
   const { validation, updateMapping } = useFileUploadStore();
@@ -102,7 +106,15 @@ export function ColumnMapper() {
                   <TableCell>
                     <FieldSelector
                       value={mapping?.targetFieldId ?? ""}
-                      displayValue={mapping?.targetFieldName ?? ""}
+                      displayValue={
+                        mapping?.targetFieldName ??
+                        (mapping?.targetFieldId
+                          ? mapCustomFieldIdToName(
+                              mapping.targetFieldId,
+                              customFieldsData?.results ?? []
+                            )
+                          : "")
+                      }
                       onValueChange={(id, name, isCustom) =>
                         updateMapping(sourceField, id, name, isCustom)
                       }

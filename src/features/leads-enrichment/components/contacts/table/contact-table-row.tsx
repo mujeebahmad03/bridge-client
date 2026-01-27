@@ -199,6 +199,9 @@ export const ContactTableRow = memo(
           );
         })}
 
+        {/* Add Column cell (matches header) */}
+        <td className="border-r border-border w-[50px] min-w-[50px] p-0" />
+
         {/* Empty cell for remaining space */}
         <td className="w-full" />
       </tr>

@@ -24,6 +24,8 @@ import { cn } from "@/lib/utils";
 
 import { ColumnSheet } from "../columns";
 import { AddContactDialog } from "../dialogs";
+import { ContactTableEmptyStateRow } from "./contact-table-empty-state";
+import { ContactTableLoadingBody } from "./contact-table-loading";
 import { ContactTableRow } from "./contact-table-row";
 import { ContactTableToolbar } from "./contact-table-toolbar";
 import { ResizableColumnHeader } from "./resizable-column-header";
@@ -56,6 +58,11 @@ export const ContactTable = () => {
     handleTableKeyDown,
     getLeftOffset,
     getRightOffset,
+    isLoadingContacts,
+    isFetchingContacts,
+    searchValue,
+    setSearchValue,
+    openAddDialog,
   } = useContactTableController();
 
   const sensors = useSensors(
@@ -70,6 +77,13 @@ export const ContactTable = () => {
   const pinnedColumns = useContactsTableStore(
     useShallow((s) => s.pinnedColumns)
   );
+
+  // Compute loading state: show skeleton on initial load or when fetching with empty data
+  const showLoading =
+    isLoadingContacts ?? (isFetchingContacts && contacts.length === 0);
+
+  // Compute column span: selector (1) + data columns + add column (1) + fill (1) = +3
+  const colSpan = visibleColumnsList.length + 3;
 
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
@@ -242,23 +256,23 @@ export const ContactTable = () => {
             </thead>
 
             <tbody>
-              {contacts.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={visibleColumnsList.length + 2}
-                    className="text-center py-12"
-                  >
-                    <div className="text-muted-foreground">
-                      No contacts found
-                    </div>
-                  </td>
-                </tr>
+              {showLoading ? (
+                <ContactTableLoadingBody
+                  dataColumnsCount={visibleColumnsList.length}
+                />
+              ) : contacts.length === 0 ? (
+                <ContactTableEmptyStateRow
+                  colSpan={colSpan}
+                  isSearching={!!searchValue}
+                  onAddContact={openAddDialog}
+                  onClearSearch={() => setSearchValue("")}
+                />
               ) : (
                 <>
                   {paddingTop > 0 && (
                     <tr>
                       <td
-                        colSpan={visibleColumnsList.length + 2}
+                        colSpan={colSpan}
                         style={{ height: paddingTop }}
                         className="p-0"
                         aria-hidden
@@ -280,7 +294,7 @@ export const ContactTable = () => {
                   {paddingBottom > 0 && (
                     <tr>
                       <td
-                        colSpan={visibleColumnsList.length + 2}
+                        colSpan={colSpan}
                         style={{ height: paddingBottom }}
                         className="p-0"
                         aria-hidden
