@@ -8,7 +8,6 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -122,43 +121,42 @@ export function EnrichmentPreview({
       </div>
 
       {/* Contacts Preview */}
-      <div className="rounded-lg border bg-card">
+      <div className="rounded-lg border bg-card overflow-hidden">
         <div className="flex items-center gap-2 p-4 border-b">
           <User className="h-4 w-4 text-primary" />
           <h4 className="font-medium text-sm">Contacts to Enrich</h4>
+          <span className="text-xs text-muted-foreground ml-auto">
+            Showing {Math.min(preview.contacts.length, 5)} of{" "}
+            {preview.contacts.length}
+          </span>
         </div>
-        <ScrollArea className="max-h-[200px]">
+        <div className="max-h-[180px] overflow-auto">
           <Table>
-            <TableHeader>
+            <TableHeader className="sticky top-0 bg-card z-10">
               <TableRow>
-                <TableHead className="w-[200px]">Name</TableHead>
+                <TableHead className="w-[180px]">Name</TableHead>
                 <TableHead>Email</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {preview.contacts.slice(0, 10).map((contact) => (
+              {preview.contacts.slice(0, 5).map((contact) => (
                 <TableRow key={contact.id}>
-                  <TableCell className="font-medium">
+                  <TableCell className="font-medium truncate max-w-[180px]">
                     {contact.first_name} {contact.last_name}
                   </TableCell>
-                  <TableCell className="text-muted-foreground">
+                  <TableCell className="text-muted-foreground truncate">
                     {contact.email_address}
                   </TableCell>
                 </TableRow>
               ))}
-              {preview.contacts.length > 10 && (
-                <TableRow>
-                  <TableCell
-                    colSpan={2}
-                    className="text-center text-muted-foreground text-sm"
-                  >
-                    +{preview.contacts.length - 10} more contacts
-                  </TableCell>
-                </TableRow>
-              )}
             </TableBody>
           </Table>
-        </ScrollArea>
+        </div>
+        {preview.contacts.length > 5 && (
+          <div className="px-4 py-2 border-t bg-muted/30 text-center text-muted-foreground text-xs">
+            +{preview.contacts.length - 5} more contacts will be enriched
+          </div>
+        )}
       </div>
 
       {/* Actions */}

@@ -1,6 +1,7 @@
 /**
  * Map a custom field id (UUID or `cf-{uuid}`) to its display name.
- * Uses custom fields from `fetchCustomFields` / `useCustomFields` (results with `id` / `name`).
+ * Custom fields may come from the datatable response (via fetchDatatableCustomFields)
+ * or from useCustomFields hook (which now uses the datatable endpoint internally).
  */
 export function mapCustomFieldIdToName(
   fieldId: string,

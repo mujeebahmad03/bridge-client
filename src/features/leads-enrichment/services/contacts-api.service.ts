@@ -1,23 +1,21 @@
-// Contacts API Service
-//
-// - fetchContacts / createContact: real API (datatable GET, create POST).
-// - Columns, delete, updateContactField: still mocked (in-memory store, simulateDelay).
-
 import { API_ROUTES } from "@/config/api-routes";
 import { apiClient, ApiError } from "@/lib/api-client";
 
 import { type ApiResponse } from "@/types/api";
 
-import type {
-  Contact,
-  ContactAddress,
-  ContactColumn,
-  ContactFieldId,
-  ContactFieldValue,
-  CreateContactPayload,
-  CustomFieldId,
+import { createCustomField } from "./contacts-upload.service";
+import {
+  type Contact,
+  type ContactAddress,
+  type ContactColumn,
+  type ContactFieldId,
+  type ContactFieldValue,
+  type CreateContactPayload,
+  type CustomField,
+  type CustomFieldId,
+  DEFAULT_CONTACT_COLUMNS,
+  type ValidatorType,
 } from "@/leads/types";
-import { DEFAULT_CONTACT_COLUMNS } from "@/leads/types";
 
 const SYSTEM_KEYS = new Set([
   "external_id",
@@ -37,12 +35,6 @@ const UUID_REGEX =
 function isCustomFieldUuid(key: string): boolean {
   return UUID_REGEX.test(key) && !SYSTEM_KEYS.has(key);
 }
-
-const simulateDelay = (ms: number = 500) =>
-  new Promise((resolve) => setTimeout(resolve, ms));
-
-/** In-memory store for mock update/delete; populated by fetchContacts from API. */
-let contactsStore: Contact[] = [];
 
 // ==================== API wrapper (unwrap response, handle errors) ====================
 
@@ -102,6 +94,18 @@ class ContactsApiService {
   }
 
   async fetchContacts(params?: { search?: string }): Promise<Contact[]> {
+    const result = await this.fetchContactsWithCustomFields(params);
+    return result.contacts;
+  }
+
+  /**
+   * Fetch contacts and custom fields from the datatable endpoint in a single API call.
+   * This is the primary method - other methods delegate to this to avoid duplicate requests.
+   */
+  async fetchContactsWithCustomFields(params?: { search?: string }): Promise<{
+    contacts: Contact[];
+    customFields: CustomField[];
+  }> {
     try {
       const queryParams: Record<string, string | number> = {};
       if (params?.search?.trim()) {
@@ -117,10 +121,13 @@ class ContactsApiService {
         response,
         "Failed to fetch contacts"
       );
-      const list = extractContactList(raw);
-      const contacts = list.map((r) => normalizeContact(r));
-      contactsStore = contacts;
-      return contacts;
+      const contactList = extractContactList(raw);
+      const customFields = extractCustomFieldsFromDatatable(raw);
+
+      return {
+        contacts: contactList.map((r) => normalizeContact(r)),
+        customFields,
+      };
     } catch (e) {
       this.handleApiError(e, "Failed to fetch contacts");
     }
@@ -142,9 +149,89 @@ class ContactsApiService {
       this.handleApiError(e, "Failed to create contact");
     }
   }
+
+  async deleteContacts(ids: string[]): Promise<void> {
+    try {
+      for (const id of ids) {
+        await apiClient.delete(API_ROUTES.CONTACTS.DELETE_CONTACT(id));
+      }
+    } catch (e) {
+      this.handleApiError(e, "Failed to delete contacts");
+    }
+  }
+
+  async updateContactField(payload: {
+    contactId: string;
+    fieldId: ContactFieldId;
+    value: ContactFieldValue;
+  }): Promise<Contact> {
+    try {
+      const body = buildUpdateFieldPayload(payload.fieldId, payload.value);
+      const response = await apiClient.patch<unknown>(
+        API_ROUTES.CONTACTS.UPDATE_CONTACT(payload.contactId),
+        body
+      );
+      const raw = this.unwrapResponse<unknown>(
+        response,
+        "Failed to update contact"
+      );
+      return normalizeContact(raw as Record<string, unknown>);
+    } catch (e) {
+      this.handleApiError(e, "Failed to update contact");
+    }
+  }
 }
 
 const contactsApiService = new ContactsApiService();
+
+/** Build minimal PATCH body for a single contact field update. */
+function buildUpdateFieldPayload(
+  fieldId: ContactFieldId,
+  value: ContactFieldValue
+): Record<string, unknown> {
+  if (isCustomFieldId(fieldId)) {
+    const uuid = String(fieldId).startsWith("cf-")
+      ? String(fieldId).slice(3)
+      : String(fieldId);
+    return { custom_fields: { [uuid]: value ?? null } };
+  }
+  const key = String(fieldId);
+  if (key === "address.city") {
+    return { address: { city: value ?? "" } };
+  }
+  if (key === "address.country") {
+    return { address: { country: value ?? "" } };
+  }
+  return { [key]: value };
+}
+
+/**
+ * Extract custom fields array from datatable response.
+ * The payload is the unwrapped data object: { paginator?, custom_fields?, data? }.
+ * @param payload - The unwrapped datatable response
+ * @returns Array of CustomField objects
+ */
+function extractCustomFieldsFromDatatable(payload: unknown): CustomField[] {
+  if (!payload || typeof payload !== "object") {
+    return [];
+  }
+  const o = payload as Record<string, unknown>;
+  const customFields = o.custom_fields;
+  if (!Array.isArray(customFields)) {
+    return [];
+  }
+  return customFields.map((item) => {
+    const cf = item as Record<string, unknown>;
+    return {
+      id: String(cf.id ?? ""),
+      name: String(cf.name ?? ""),
+      validator_type: (cf.validator_type ?? "TEXT") as ValidatorType,
+      description: String(cf.description ?? ""),
+      created_at: String(cf.created_at ?? ""),
+      last_modified_at: String(cf.last_modified_at ?? ""),
+    } as CustomField;
+  });
+}
 
 /** Extract contact list from datatable response: { data } / { paginator, data } / { results } / array. */
 function extractContactList(payload: unknown): Record<string, unknown>[] {
@@ -226,7 +313,11 @@ function parseAddressString(s: string): ContactAddress {
   return out;
 }
 
-/** Normalize backend contact to Contact (external_id, parseAddressString, top-level custom UUIDs). */
+/**
+ * Normalize backend contact to Contact type.
+ * Uses `id` (backend UUID) as the primary identifier, with `external_id` as fallback.
+ * Parses address strings and extracts custom fields from both top-level UUIDs and nested custom_fields object.
+ */
 function normalizeContact(raw: Record<string, unknown>): Contact {
   const rawAddress = raw.address;
   let address: ContactAddress;
@@ -266,7 +357,8 @@ function normalizeContact(raw: Record<string, unknown>): Contact {
 
   const now = new Date().toISOString();
   return {
-    id: String(raw.external_id ?? raw.id ?? ""),
+    // Use backend id (UUID) as primary identifier, fallback to external_id
+    id: String(raw.id ?? raw.external_id ?? ""),
     first_name: String(raw.first_name ?? ""),
     last_name: String(raw.last_name ?? ""),
     other_names: String(raw.other_names ?? ""),
@@ -319,29 +411,62 @@ function toCreateContactRequest(
 
 // -------------------- Columns (system + custom) --------------------
 
-let customColumns: ContactColumn[] = [];
+function validatorTypeToColumnType(v: ValidatorType): ContactColumn["type"] {
+  switch (v) {
+    case "EMAIL_ADDRESS":
+      return "email";
+    case "PHONE":
+      return "phone";
+    case "TEXT":
+    case "NUMBER":
+    case "URL":
+    case "NONE":
+    default:
+      return "text";
+  }
+}
 
+function customFieldToContactColumn(f: CustomField): ContactColumn {
+  return {
+    id: `cf-${f.id}` as CustomFieldId,
+    label: f.name,
+    type: validatorTypeToColumnType(f.validator_type),
+    width: 160,
+  };
+}
+
+/**
+ * Fetch contact columns including system columns and custom fields.
+ * Custom fields are extracted from the datatable response.
+ */
 export async function fetchContactColumns(): Promise<ContactColumn[]> {
-  await simulateDelay(250);
-  return [...DEFAULT_CONTACT_COLUMNS, ...customColumns];
+  const { customFields } = await fetchContactsWithCustomFields();
+  const custom = customFields.map(customFieldToContactColumn);
+  return [...DEFAULT_CONTACT_COLUMNS, ...custom];
 }
 
 export async function createCustomContactColumn(payload: {
   label: string;
   type?: ContactColumn["type"];
 }): Promise<ContactColumn> {
-  await simulateDelay(400);
+  const created = await createCustomField({
+    name: payload.label,
+    validator_type: "TEXT",
+    description: "",
+  });
+  return customFieldToContactColumn(created);
+}
 
-  const id = `cf-${Date.now()}` as CustomFieldId;
-  const newCol: ContactColumn = {
-    id,
-    label: payload.label,
-    type: payload.type ?? "text",
-    width: 160,
-  };
+// -------------------- Contacts with Custom Fields (single API call) --------------------
 
-  customColumns = [...customColumns, newCol];
-  return newCol;
+/**
+ * Fetch contacts and custom fields from the datatable endpoint in a single API call.
+ * This is the recommended method when both contacts and custom fields are needed.
+ */
+export async function fetchContactsWithCustomFields(params?: {
+  search?: string;
+}): Promise<{ contacts: Contact[]; customFields: CustomField[] }> {
+  return contactsApiService.fetchContactsWithCustomFields(params);
 }
 
 // -------------------- Contacts (real API) --------------------
@@ -359,9 +484,7 @@ export async function createContact(
 }
 
 export async function deleteContacts(ids: string[]): Promise<void> {
-  await simulateDelay(400);
-  const idSet = new Set(ids);
-  contactsStore = contactsStore.filter((c) => !idSet.has(c.id));
+  return contactsApiService.deleteContacts(ids);
 }
 
 // -------------------- Field update helpers --------------------
@@ -376,25 +499,6 @@ const getNestedValue = (
     }
     return undefined;
   }, obj as unknown);
-};
-
-const setNestedValue = (
-  obj: Record<string, unknown>,
-  path: string,
-  value: unknown
-): Record<string, unknown> => {
-  const parts = path.split(".");
-  const result = { ...obj };
-  let current: Record<string, unknown> = result;
-
-  for (let i = 0; i < parts.length - 1; i++) {
-    const part = parts[i];
-    current[part] = { ...((current[part] as Record<string, unknown>) || {}) };
-    current = current[part] as Record<string, unknown>;
-  }
-
-  current[parts[parts.length - 1]] = value;
-  return result;
 };
 
 function isCustomFieldId(fieldId: ContactFieldId): fieldId is CustomFieldId {
@@ -419,42 +523,5 @@ export async function updateContactField(payload: {
   fieldId: ContactFieldId;
   value: ContactFieldValue;
 }): Promise<Contact> {
-  await simulateDelay(350);
-
-  const { contactId, fieldId, value } = payload;
-  const idx = contactsStore.findIndex((c) => c.id === contactId);
-  if (idx === -1) {
-    throw new Error("Contact not found");
-  }
-
-  const current = contactsStore[idx];
-  const updatedAt = new Date().toISOString();
-
-  let next: Contact;
-  if (isCustomFieldId(fieldId)) {
-    next = {
-      ...current,
-      custom_fields: {
-        ...(current.custom_fields ?? {}),
-        [fieldId]: value ?? "",
-      },
-      updated_at: updatedAt,
-    };
-  } else {
-    next = setNestedValue(
-      current as unknown as Record<string, unknown>,
-      String(fieldId),
-      value
-    ) as Contact;
-    next.updated_at = updatedAt;
-    next.custom_fields = current.custom_fields ?? {};
-  }
-
-  contactsStore = [
-    ...contactsStore.slice(0, idx),
-    next,
-    ...contactsStore.slice(idx + 1),
-  ];
-
-  return next;
+  return contactsApiService.updateContactField(payload);
 }

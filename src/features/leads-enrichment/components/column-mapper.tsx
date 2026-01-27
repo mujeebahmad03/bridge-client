@@ -1,7 +1,6 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
-
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -11,73 +10,25 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-import { FieldSelector, type MappableField } from "./field-selector";
+import { FieldSelector } from "./field-selector";
 import { MappingPreview } from "./mapping-preview";
-import { systemFields } from "@/leads/constants";
-import { useCreateCustomField, useCustomFields } from "@/leads/hooks";
-import { useFileUploadStore, useUsedTargetFieldIds } from "@/leads/stores";
-import {
-  getSampleValuesForField,
-  inferValidatorType,
-  mapCustomFieldIdToName,
-} from "@/leads/utils";
+import { useColumnMapper } from "@/leads/hooks/use-column-mapper";
 
 export function ColumnMapper() {
-  const { validation, updateMapping } = useFileUploadStore();
-  const usedTargetFieldIds = useUsedTargetFieldIds();
-
-  const sourceFields = useMemo(
-    () => validation?.headers ?? [],
-    [validation?.headers]
-  );
-  const preview = useMemo(
-    () => validation?.preview ?? [],
-    [validation?.preview]
-  );
-
-  const { data: customFieldsData, isLoading: loadingCustomFields } =
-    useCustomFields();
-  const createCustomFieldMutation = useCreateCustomField();
-
-  const allTargetFields = useMemo<MappableField[]>(() => {
-    const sysFields: MappableField[] = systemFields.map((f) => ({
-      id: f.id,
-      name: f.name,
-      isCustom: false,
-      required: f.required,
-    }));
-
-    const customFields: MappableField[] = (customFieldsData?.results ?? []).map(
-      (f) => ({
-        id: f.id,
-        name: f.name,
-        isCustom: true,
-      })
-    );
-
-    return [...sysFields, ...customFields];
-  }, [customFieldsData]);
-
-  const getMapping = useCallback((sourceField: string) => {
-    const { mappings } = useFileUploadStore.getState();
-    return mappings.find((m) => m.sourceField === sourceField);
-  }, []);
-
-  const handleCreateCustomField = useCallback(
-    async (sourceField: string, fieldName: string) => {
-      const sampleValues = getSampleValuesForField(preview, sourceField);
-      const validatorType = inferValidatorType(fieldName, sampleValues);
-
-      const newField = await createCustomFieldMutation.mutateAsync({
-        name: fieldName,
-        validator_type: validatorType,
-        description: `Custom field created from column: ${sourceField}`,
-      });
-
-      updateMapping(sourceField, newField.id, newField.name, true);
-    },
-    [preview, createCustomFieldMutation, updateMapping]
-  );
+  const {
+    sourceFields,
+    preview,
+    allTargetFields,
+    usedTargetFieldIds,
+    isLoadingCustomFields,
+    isCreatingCustomField,
+    getMapping,
+    getDisplayValue,
+    getSampleValue,
+    isAutoMapped,
+    handleFieldSelect,
+    handleCreateCustomField,
+  } = useColumnMapper();
 
   return (
     <div className="space-y-6">
@@ -91,51 +42,94 @@ export function ColumnMapper() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sourceFields.map((sourceField) => {
-              const mapping = getMapping(sourceField);
-              const sampleValue = preview[0]?.[sourceField] ?? "-";
-
-              return (
-                <TableRow key={sourceField}>
-                  <TableCell className="font-medium text-foreground">
-                    {sourceField}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground truncate max-w-[200px]">
-                    {sampleValue}
-                  </TableCell>
-                  <TableCell>
-                    <FieldSelector
-                      value={mapping?.targetFieldId ?? ""}
-                      displayValue={
-                        mapping?.targetFieldName ??
-                        (mapping?.targetFieldId
-                          ? mapCustomFieldIdToName(
-                              mapping.targetFieldId,
-                              customFieldsData?.results ?? []
-                            )
-                          : "")
-                      }
-                      onValueChange={(id, name, isCustom) =>
-                        updateMapping(sourceField, id, name, isCustom)
-                      }
-                      onCreateNew={(name) =>
-                        handleCreateCustomField(sourceField, name)
-                      }
-                      fields={allTargetFields}
-                      usedFieldIds={usedTargetFieldIds}
-                      currentMappingId={mapping?.targetFieldId}
-                      isCreating={createCustomFieldMutation.isPending}
-                      isLoading={loadingCustomFields}
-                    />
-                  </TableCell>
-                </TableRow>
-              );
-            })}
+            {sourceFields.map((sourceField) => (
+              <ColumnMapperRow
+                key={sourceField}
+                sourceField={sourceField}
+                sampleValue={getSampleValue(sourceField)}
+                mapping={getMapping(sourceField)}
+                displayValue={getDisplayValue(sourceField)}
+                isAutoMapped={isAutoMapped(sourceField)}
+                allTargetFields={allTargetFields}
+                usedTargetFieldIds={usedTargetFieldIds}
+                isLoadingCustomFields={isLoadingCustomFields}
+                isCreatingCustomField={isCreatingCustomField}
+                onFieldSelect={handleFieldSelect}
+                onCreateCustomField={handleCreateCustomField}
+              />
+            ))}
           </TableBody>
         </Table>
       </div>
 
       <MappingPreview sourceFields={sourceFields} preview={preview} />
     </div>
+  );
+}
+
+// Extracted row component for better performance with React.memo potential
+interface ColumnMapperRowProps {
+  sourceField: string;
+  sampleValue: string;
+  mapping: ReturnType<ReturnType<typeof useColumnMapper>["getMapping"]>;
+  displayValue: string;
+  isAutoMapped: boolean;
+  allTargetFields: ReturnType<typeof useColumnMapper>["allTargetFields"];
+  usedTargetFieldIds: ReturnType<typeof useColumnMapper>["usedTargetFieldIds"];
+  isLoadingCustomFields: boolean;
+  isCreatingCustomField: boolean;
+  onFieldSelect: (
+    sourceField: string,
+    id: string,
+    name: string,
+    isCustom: boolean
+  ) => void;
+  onCreateCustomField: (sourceField: string, fieldName: string) => void;
+}
+
+function ColumnMapperRow({
+  sourceField,
+  sampleValue,
+  mapping,
+  displayValue,
+  isAutoMapped,
+  allTargetFields,
+  usedTargetFieldIds,
+  isLoadingCustomFields,
+  isCreatingCustomField,
+  onFieldSelect,
+  onCreateCustomField,
+}: ColumnMapperRowProps) {
+  return (
+    <TableRow>
+      <TableCell className="font-medium text-foreground">
+        <div className="flex items-center gap-2">
+          {sourceField}
+          {isAutoMapped && (
+            <Badge variant="secondary" className="text-xs font-normal">
+              Auto
+            </Badge>
+          )}
+        </div>
+      </TableCell>
+      <TableCell className="text-muted-foreground truncate max-w-[200px]">
+        {sampleValue}
+      </TableCell>
+      <TableCell>
+        <FieldSelector
+          value={mapping?.targetFieldId ?? ""}
+          displayValue={displayValue}
+          onValueChange={(id, name, isCustom) =>
+            onFieldSelect(sourceField, id, name, isCustom)
+          }
+          onCreateNew={(name) => onCreateCustomField(sourceField, name)}
+          fields={allTargetFields}
+          usedFieldIds={usedTargetFieldIds}
+          currentMappingId={mapping?.targetFieldId}
+          isCreating={isCreatingCustomField}
+          isLoading={isLoadingCustomFields}
+        />
+      </TableCell>
+    </TableRow>
   );
 }

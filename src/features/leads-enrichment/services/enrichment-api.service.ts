@@ -1,222 +1,353 @@
-// Mock Enrichment API Service
+import { API_ROUTES } from "@/config/api-routes";
+import { apiClient, ApiError } from "@/lib/api-client";
+
+import { type ApiResponse } from "@/types/api";
 
 import type {
   CreatePreviewRequest,
   EnrichmentApplyResponse,
   EnrichmentApproveResponse,
-  EnrichmentContactPreview,
   EnrichmentListResponse,
   EnrichmentPreset,
   EnrichmentPreviewResponse,
   EnrichmentResultsResponse,
-  EnrichmentStatus,
   EnrichmentStatusResponse,
-  PipelineConfig,
 } from "@/leads/types";
 
-// Simulate network delay
-const simulateDelay = (ms: number = 800) =>
-  new Promise((resolve) => setTimeout(resolve, ms));
+// ==================== API wrapper (unwrap response, handle errors) ====================
 
-// Mock presets data
-const MOCK_PRESETS: EnrichmentPreset[] = [
-  {
-    value: "FIND_LINKEDIN",
-    label: "Find LinkedIn Profile",
-    description: "Find LinkedIn profile URL from email address",
-  },
-  {
-    value: "FIND_PHONE",
-    label: "Find Phone Number",
-    description: "Find phone number from LinkedIn profile",
-  },
-  {
-    value: "FIND_EMAIL",
-    label: "Find Email Address",
-    description: "Find personal email from LinkedIn profile",
-  },
-  {
-    value: "VALIDATE_EMAIL",
-    label: "Validate Email",
-    description: "Validate email address deliverability",
-  },
-  {
-    value: "FIND_WORK_EMAIL",
-    label: "Find Work Email",
-    description: "Find work email from name and company",
-  },
-  {
-    value: "ENRICH_FROM_LINKEDIN",
-    label: "Enrich from LinkedIn",
-    description: "Get full profile data from LinkedIn URL",
-  },
-  {
-    value: "FULL_ENRICHMENT",
-    label: "Full Enrichment",
-    description: "Complete enrichment with AI reasoning",
-  },
-];
-
-// In-memory store for enrichment requests
-const enrichmentStore = new Map<
-  string,
-  {
-    request: EnrichmentPreviewResponse;
-    status: EnrichmentStatus;
-    pollCount: number;
+/** Type guard: payload is wrapped { status, data } ApiResponse */
+function isWrappedApiResponse<T>(payload: unknown): payload is ApiResponse<T> {
+  if (!payload || typeof payload !== "object") {
+    return false;
   }
->();
+  const o = payload as Record<string, unknown>;
+  if (!("status" in o) || !("data" in o)) {
+    return false;
+  }
+  const s = o.status;
+  if (!s || typeof s !== "object") {
+    return false;
+  }
+  const st = s as Record<string, unknown>;
+  return typeof st.status_code === "number";
+}
 
-// Generate mock pipeline based on preset
-const generateMockPipeline = (preset: string): PipelineConfig[] => {
-  const pipelines: Record<string, PipelineConfig[]> = {
-    FIND_LINKEDIN: [
-      {
-        pipe_id: "people:professionalprofileurl:email:waterfall@1",
-        config: {
-          input_fields: { email: { alias: "email_address" } },
-          output_fields: {
-            professional_profile_url: { alias: "linkedin_profile" },
-          },
-        },
-      },
-    ],
-    FIND_PHONE: [
-      {
-        pipe_id: "people:phone:linkedin:waterfall@1",
-        config: {
-          input_fields: { linkedin_url: { alias: "linkedin_profile" } },
-          output_fields: { phone_number: { alias: "primary_phone_number" } },
-        },
-      },
-    ],
-    FIND_EMAIL: [
-      {
-        pipe_id: "people:email:linkedin:waterfall@1",
-        config: {
-          input_fields: { linkedin_url: { alias: "linkedin_profile" } },
-          output_fields: { personal_email: { alias: "personal_email" } },
-        },
-      },
-    ],
-    VALIDATE_EMAIL: [
-      {
-        pipe_id: "email:validation:deliverability@1",
-        config: {
-          input_fields: { email: { alias: "email_address" } },
-          output_fields: {
-            is_valid: { alias: "email_valid" },
-            deliverability: { alias: "email_deliverability" },
-          },
-        },
-      },
-    ],
-    FIND_WORK_EMAIL: [
-      {
-        pipe_id: "people:workemail:namecompany:waterfall@1",
-        config: {
-          input_fields: {
-            first_name: { alias: "first_name" },
-            last_name: { alias: "last_name" },
-            company: { alias: "company" },
-          },
-          output_fields: { work_email: { alias: "work_email" } },
-        },
-      },
-    ],
-    ENRICH_FROM_LINKEDIN: [
-      {
-        pipe_id: "people:fullprofile:linkedin:scraper@1",
-        config: {
-          input_fields: { linkedin_url: { alias: "linkedin_profile" } },
-          output_fields: {
-            headline: { alias: "linkedin_headline" },
-            company: { alias: "company" },
-            location: { alias: "location" },
-            connections: { alias: "linkedin_connections" },
-          },
-        },
-      },
-    ],
-    FULL_ENRICHMENT: [
-      {
-        pipe_id: "people:professionalprofileurl:email:waterfall@1",
-        config: {
-          input_fields: { email: { alias: "email_address" } },
-          output_fields: {
-            professional_profile_url: { alias: "linkedin_profile" },
-          },
-        },
-      },
-      {
-        pipe_id: "people:fullprofile:linkedin:scraper@1",
-        config: {
-          input_fields: { linkedin_url: { alias: "linkedin_profile" } },
-          output_fields: {
-            headline: { alias: "linkedin_headline" },
-            company: { alias: "company" },
-            phone: { alias: "primary_phone_number" },
-          },
-        },
-      },
-    ],
-  };
-  return pipelines[preset] || pipelines.FIND_LINKEDIN;
-};
+class EnrichmentApiService {
+  private isSuccessResponse(statusCode: number): boolean {
+    return statusCode >= 200 && statusCode < 300;
+  }
 
-// Generate mock enrichment results
-const generateMockResults = (
-  contacts: EnrichmentContactPreview[],
-  preset: string
-) => {
-  const results: Record<string, Record<string, string>> = {};
+  private handleApiError(error: unknown, defaultMessage: string): never {
+    if (error instanceof ApiError) {
+      if (error.fields) {
+        const msg = Object.entries(error.fields)
+          .map(([f, m]) => `${f}: ${m.join(", ")}`)
+          .join("; ");
+        throw new Error(msg || error.detail || defaultMessage);
+      }
+      throw new Error(error.detail || defaultMessage);
+    }
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error(defaultMessage);
+  }
 
-  contacts.forEach((contact) => {
-    const mockData: Record<string, Record<string, string>> = {
-      FIND_LINKEDIN: {
-        linkedin_profile: `https://linkedin.com/in/${contact.first_name?.toLowerCase() ?? "user"}${contact.last_name?.toLowerCase() ?? ""}`,
-      },
-      FIND_PHONE: {
-        primary_phone_number: `+1${Math.floor(Math.random() * 9000000000 + 1000000000)}`,
-      },
-      FIND_EMAIL: {
-        personal_email: `${contact.first_name?.toLowerCase() ?? "user"}.personal@gmail.com`,
-      },
-      VALIDATE_EMAIL: {
-        email_valid: "true",
-        email_deliverability: "deliverable",
-      },
-      FIND_WORK_EMAIL: {
-        work_email: `${contact.first_name?.toLowerCase() ?? "user"}.${contact.last_name?.toLowerCase() ?? "user"}@company.com`,
-      },
-      ENRICH_FROM_LINKEDIN: {
-        linkedin_headline: "Senior Software Engineer",
-        company: "Tech Company Inc.",
-        location: "San Francisco, CA",
-        linkedin_connections: "500+",
-      },
-      FULL_ENRICHMENT: {
-        linkedin_profile: `https://linkedin.com/in/${contact.first_name?.toLowerCase() ?? "user"}${contact.last_name?.toLowerCase() ?? ""}`,
-        linkedin_headline: "Senior Software Engineer",
-        company: "Tech Company Inc.",
-        primary_phone_number: `+1${Math.floor(Math.random() * 9000000000 + 1000000000)}`,
-      },
+  private validateResponse<T>(
+    response: ApiResponse<T>,
+    defaultErrorMessage: string
+  ): T {
+    if (this.isSuccessResponse(response.status.status_code) && response.data) {
+      return response.data;
+    }
+    throw new Error(defaultErrorMessage);
+  }
+
+  private unwrapResponse<T>(payload: unknown, defaultErrorMessage: string): T {
+    if (isWrappedApiResponse<T>(payload)) {
+      return this.validateResponse(payload, defaultErrorMessage);
+    }
+    return payload as T;
+  }
+
+  async fetchEnrichmentPresets(): Promise<EnrichmentPreset[]> {
+    try {
+      const response = await apiClient.get<unknown>(
+        API_ROUTES.LEADS_ENRICHMENT.GET_PRESET
+      );
+      const raw = this.unwrapResponse<unknown>(
+        response,
+        "Failed to fetch enrichment presets"
+      );
+
+      // Handle array or { results: [...] } response
+      let presets: unknown[];
+      if (Array.isArray(raw)) {
+        presets = raw;
+      } else if (
+        raw &&
+        typeof raw === "object" &&
+        "results" in raw &&
+        Array.isArray((raw as { results: unknown[] }).results)
+      ) {
+        presets = (raw as { results: unknown[] }).results;
+      } else {
+        return [];
+      }
+
+      // Map to EnrichmentPreset format
+      return presets.map((p: unknown) => {
+        const item = p as Record<string, unknown>;
+        return {
+          value: String(item.value ?? item.id ?? ""),
+          label: String(item.label ?? item.name ?? ""),
+          description: String(item.description ?? ""),
+        } as EnrichmentPreset;
+      });
+    } catch (e) {
+      this.handleApiError(e, "Failed to fetch enrichment presets");
+    }
+  }
+
+  async createEnrichmentPreview(
+    request: CreatePreviewRequest,
+    _contacts: Array<{
+      id: string;
+      first_name: string;
+      last_name: string;
+      email_address: string;
+    }>
+  ): Promise<EnrichmentPreviewResponse> {
+    try {
+      const body: Record<string, unknown> = {
+        contact_ids: request.contact_ids ?? [],
+        enrichment_type: request.enrichment_type,
+      };
+      if (request.contact_list_id) {
+        body.contact_list_id = request.contact_list_id;
+      }
+      if (request.preset_action) {
+        body.preset_action = request.preset_action;
+      }
+      if (request.enrichment_description) {
+        body.enrichment_description = request.enrichment_description;
+      }
+
+      const response = await apiClient.post<unknown>(
+        API_ROUTES.ENRICHMENT.CREATE_ENRICHMENT,
+        body
+      );
+      const raw = this.unwrapResponse<unknown>(
+        response,
+        "Failed to create enrichment preview"
+      );
+      return this.normalizePreviewResponse(raw as Record<string, unknown>);
+    } catch (e) {
+      this.handleApiError(e, "Failed to create enrichment preview");
+    }
+  }
+
+  private normalizePreviewResponse(
+    raw: Record<string, unknown>
+  ): EnrichmentPreviewResponse {
+    return {
+      enrichment_request_id: String(raw.enrichment_request_id ?? raw.id ?? ""),
+      status: String(
+        raw.status ?? "PREVIEW"
+      ) as EnrichmentPreviewResponse["status"],
+      enrichment_type: String(
+        raw.enrichment_type ?? "PRESET"
+      ) as EnrichmentPreviewResponse["enrichment_type"],
+      preset_action: raw.preset_action
+        ? (String(
+            raw.preset_action
+          ) as EnrichmentPreviewResponse["preset_action"])
+        : null,
+      enrichment_description: String(raw.enrichment_description ?? ""),
+      contact_count: Number(raw.contact_count ?? 0),
+      is_contact_list: Boolean(raw.is_contact_list ?? false),
+      contact_list_id: raw.contact_list_id ? String(raw.contact_list_id) : null,
+      contacts: Array.isArray(raw.contacts)
+        ? (raw.contacts as EnrichmentPreviewResponse["contacts"])
+        : [],
+      pipeline: Array.isArray(raw.pipeline)
+        ? (raw.pipeline as EnrichmentPreviewResponse["pipeline"])
+        : [],
+      message: String(
+        raw.message ??
+          "Preview generated. Call /approve/ to execute the enrichment."
+      ),
     };
+  }
 
-    results[contact.id] = mockData[preset] || mockData.FIND_LINKEDIN;
-  });
+  async approveEnrichment(
+    enrichmentRequestId: string
+  ): Promise<EnrichmentApproveResponse> {
+    try {
+      const response = await apiClient.post<unknown>(
+        API_ROUTES.ENRICHMENT.APPROVE_ENRICHMENT(enrichmentRequestId)
+      );
+      const raw = this.unwrapResponse<unknown>(
+        response,
+        "Failed to approve enrichment"
+      );
+      const data = raw as Record<string, unknown>;
+      return {
+        enrichment_request_id: String(
+          data.enrichment_request_id ?? enrichmentRequestId
+        ),
+        status: String(
+          data.status ?? "APPROVED"
+        ) as EnrichmentApproveResponse["status"],
+        message: String(
+          data.message ?? "Enrichment approved and job submitted"
+        ),
+      };
+    } catch (e) {
+      this.handleApiError(e, "Failed to approve enrichment");
+    }
+  }
 
-  return results;
-};
+  async checkEnrichmentStatus(
+    enrichmentRequestId: string
+  ): Promise<EnrichmentStatusResponse> {
+    try {
+      const response = await apiClient.get<unknown>(
+        API_ROUTES.ENRICHMENT.GET_ENRICHMENT_STATUS(enrichmentRequestId)
+      );
+      const raw = this.unwrapResponse<unknown>(
+        response,
+        "Failed to check enrichment status"
+      );
+      const data = raw as Record<string, unknown>;
+      return {
+        id: String(data.id ?? enrichmentRequestId),
+        enrichment_type: String(
+          data.enrichment_type ?? "PRESET"
+        ) as EnrichmentStatusResponse["enrichment_type"],
+        preset_action: data.preset_action
+          ? (String(
+              data.preset_action
+            ) as EnrichmentStatusResponse["preset_action"])
+          : null,
+        status: String(
+          data.status ?? "PREVIEW"
+        ) as EnrichmentStatusResponse["status"],
+        pipe0_job_id: data.pipe0_job_id ? String(data.pipe0_job_id) : null,
+        contact_count: Number(data.contact_count ?? 0),
+        created_at: String(data.created_at ?? new Date().toISOString()),
+        last_modified_at: String(
+          data.last_modified_at ?? new Date().toISOString()
+        ),
+        error_message: data.error_message
+          ? String(data.error_message)
+          : undefined,
+      };
+    } catch (e) {
+      this.handleApiError(e, "Failed to check enrichment status");
+    }
+  }
 
-// API Functions
+  async getEnrichmentResults(
+    enrichmentRequestId: string
+  ): Promise<EnrichmentResultsResponse> {
+    try {
+      const response = await apiClient.get<unknown>(
+        API_ROUTES.ENRICHMENT.GET_ENRICHMENT_RESULTS(enrichmentRequestId)
+      );
+      const raw = this.unwrapResponse<unknown>(
+        response,
+        "Failed to get enrichment results"
+      );
+      const data = raw as Record<string, unknown>;
+      return {
+        id: String(data.id ?? enrichmentRequestId),
+        status: String(
+          data.status ?? "RESULTS_READY"
+        ) as EnrichmentResultsResponse["status"],
+        result_data: {
+          records:
+            data.result_data && typeof data.result_data === "object"
+              ? (((data.result_data as { records?: unknown }).records as Record<
+                  string,
+                  Record<string, string>
+                >) ?? {})
+              : {},
+        },
+        contacts: Array.isArray(data.contacts)
+          ? (data.contacts as EnrichmentResultsResponse["contacts"])
+          : [],
+      };
+    } catch (e) {
+      this.handleApiError(e, "Failed to get enrichment results");
+    }
+  }
 
-export const fetchEnrichmentPresets = async (): Promise<EnrichmentPreset[]> => {
-  await simulateDelay(500);
-  return MOCK_PRESETS;
-};
+  async applyEnrichmentResults(
+    enrichmentRequestId: string
+  ): Promise<EnrichmentApplyResponse> {
+    try {
+      const response = await apiClient.post<unknown>(
+        API_ROUTES.ENRICHMENT.APPLY_ENRICHMENT(enrichmentRequestId)
+      );
+      const raw = this.unwrapResponse<unknown>(
+        response,
+        "Failed to apply enrichment results"
+      );
+      const data = raw as Record<string, unknown>;
+      return {
+        enrichment_request_id: String(
+          data.enrichment_request_id ?? enrichmentRequestId
+        ),
+        message: String(
+          data.message ?? "Enrichment results are being applied to contacts"
+        ),
+      };
+    } catch (e) {
+      this.handleApiError(e, "Failed to apply enrichment results");
+    }
+  }
 
-export const createEnrichmentPreview = async (
+  async fetchEnrichmentHistory(
+    page: number = 1,
+    pageSize: number = 10
+  ): Promise<EnrichmentListResponse> {
+    try {
+      const response = await apiClient.get<unknown>(
+        API_ROUTES.ENRICHMENT.GET_ENRICHMENT_REQUESTS,
+        {
+          params: { page, page_size: pageSize },
+        }
+      );
+      const raw = this.unwrapResponse<unknown>(
+        response,
+        "Failed to fetch enrichment history"
+      );
+      const data = raw as Record<string, unknown>;
+      return {
+        count: Number(data.count ?? 0),
+        next: data.next ? String(data.next) : null,
+        previous: data.previous ? String(data.previous) : null,
+        results: Array.isArray(data.results)
+          ? (data.results as EnrichmentListResponse["results"])
+          : [],
+      };
+    } catch (e) {
+      this.handleApiError(e, "Failed to fetch enrichment history");
+    }
+  }
+}
+
+const enrichmentApiService = new EnrichmentApiService();
+
+// ==================== API Functions ====================
+
+export async function fetchEnrichmentPresets(): Promise<EnrichmentPreset[]> {
+  return enrichmentApiService.fetchEnrichmentPresets();
+}
+
+export async function createEnrichmentPreview(
   request: CreatePreviewRequest,
   contacts: Array<{
     id: string;
@@ -224,177 +355,37 @@ export const createEnrichmentPreview = async (
     last_name: string;
     email_address: string;
   }>
-): Promise<EnrichmentPreviewResponse> => {
-  await simulateDelay(1000);
+): Promise<EnrichmentPreviewResponse> {
+  return enrichmentApiService.createEnrichmentPreview(request, contacts);
+}
 
-  const requestId = crypto.randomUUID();
-  const isCustom = request.enrichment_type === "CUSTOM";
-
-  const response: EnrichmentPreviewResponse = {
-    enrichment_request_id: requestId,
-    status: "PREVIEW",
-    enrichment_type: request.enrichment_type,
-    preset_action: isCustom ? null : request.preset_action!,
-    enrichment_description: request.enrichment_description ?? "",
-    contact_count: contacts.length,
-    is_contact_list: !!request.contact_list_id,
-    contact_list_id: request.contact_list_id ?? null,
-    contacts: contacts.map((c) => ({
-      id: c.id,
-      first_name: c.first_name,
-      last_name: c.last_name,
-      email_address: c.email_address,
-    })),
-    pipeline: isCustom
-      ? [
-          {
-            pipe_id: "ai:custom:reasoning@1",
-            config: {
-              input_fields: {
-                description: { alias: "enrichment_description" },
-              },
-              output_fields: { result: { alias: "ai_enrichment_result" } },
-            },
-          },
-        ]
-      : generateMockPipeline(request.preset_action!),
-    message: "Preview generated. Call /approve/ to execute the enrichment.",
-  };
-
-  enrichmentStore.set(requestId, {
-    request: response,
-    status: "PREVIEW",
-    pollCount: 0,
-  });
-
-  return response;
-};
-
-export const approveEnrichment = async (
+export async function approveEnrichment(
   enrichmentRequestId: string
-): Promise<EnrichmentApproveResponse> => {
-  await simulateDelay(600);
+): Promise<EnrichmentApproveResponse> {
+  return enrichmentApiService.approveEnrichment(enrichmentRequestId);
+}
 
-  const stored = enrichmentStore.get(enrichmentRequestId);
-  if (!stored) {
-    throw new Error("Enrichment request not found");
-  }
-
-  stored.status = "APPROVED";
-  stored.pollCount = 0;
-
-  // Simulate transitioning to IN_PROGRESS after a short delay
-  setTimeout(() => {
-    const s = enrichmentStore.get(enrichmentRequestId);
-    if (s) {
-      s.status = "IN_PROGRESS";
-    }
-  }, 500);
-
-  return {
-    enrichment_request_id: enrichmentRequestId,
-    status: "APPROVED",
-    message: "Enrichment approved and job submitted",
-  };
-};
-
-export const checkEnrichmentStatus = async (
+export async function checkEnrichmentStatus(
   enrichmentRequestId: string
-): Promise<EnrichmentStatusResponse> => {
-  await simulateDelay(400);
+): Promise<EnrichmentStatusResponse> {
+  return enrichmentApiService.checkEnrichmentStatus(enrichmentRequestId);
+}
 
-  const stored = enrichmentStore.get(enrichmentRequestId);
-  if (!stored) {
-    throw new Error("Enrichment request not found");
-  }
-
-  // Simulate progress: after 3 polls, move to RESULTS_READY
-  stored.pollCount++;
-  if (stored.pollCount >= 3 && stored.status === "IN_PROGRESS") {
-    stored.status = "RESULTS_READY";
-  }
-
-  return {
-    id: enrichmentRequestId,
-    enrichment_type: stored.request.enrichment_type,
-    preset_action: stored.request.preset_action,
-    status: stored.status,
-    pipe0_job_id:
-      stored.status !== "PREVIEW"
-        ? `pipe0_job_${enrichmentRequestId.slice(0, 8)}`
-        : null,
-    contact_count: stored.request.contact_count,
-    created_at: new Date(Date.now() - 60000).toISOString(),
-    last_modified_at: new Date().toISOString(),
-  };
-};
-
-export const getEnrichmentResults = async (
+export async function getEnrichmentResults(
   enrichmentRequestId: string
-): Promise<EnrichmentResultsResponse> => {
-  await simulateDelay(600);
+): Promise<EnrichmentResultsResponse> {
+  return enrichmentApiService.getEnrichmentResults(enrichmentRequestId);
+}
 
-  const stored = enrichmentStore.get(enrichmentRequestId);
-  if (!stored) {
-    throw new Error("Enrichment request not found");
-  }
-
-  const preset = stored.request.preset_action ?? "FIND_LINKEDIN";
-  const records = generateMockResults(stored.request.contacts, preset);
-
-  return {
-    id: enrichmentRequestId,
-    status: stored.status,
-    result_data: { records },
-    contacts: stored.request.contacts.map((c) => ({
-      ...c,
-      ...records[c.id],
-    })),
-  };
-};
-
-export const applyEnrichmentResults = async (
+export async function applyEnrichmentResults(
   enrichmentRequestId: string
-): Promise<EnrichmentApplyResponse> => {
-  await simulateDelay(800);
+): Promise<EnrichmentApplyResponse> {
+  return enrichmentApiService.applyEnrichmentResults(enrichmentRequestId);
+}
 
-  const stored = enrichmentStore.get(enrichmentRequestId);
-  if (!stored) {
-    throw new Error("Enrichment request not found");
-  }
-
-  stored.status = "SUCCESSFUL";
-
-  return {
-    enrichment_request_id: enrichmentRequestId,
-    message: "Enrichment results are being applied to contacts",
-  };
-};
-
-export const fetchEnrichmentHistory = async (
+export async function fetchEnrichmentHistory(
   page: number = 1,
   pageSize: number = 10
-): Promise<EnrichmentListResponse> => {
-  await simulateDelay(500);
-
-  const allItems = Array.from(enrichmentStore.entries()).map(([id, data]) => ({
-    id,
-    enrichment_type: data.request.enrichment_type,
-    preset_action: data.request.preset_action,
-    status: data.status,
-    contact_count: data.request.contact_count,
-    created_at: new Date(
-      Date.now() - Math.random() * 86400000 * 7
-    ).toISOString(),
-  }));
-
-  const start = (page - 1) * pageSize;
-  const results = allItems.slice(start, start + pageSize);
-
-  return {
-    count: allItems.length,
-    next: start + pageSize < allItems.length ? `?page=${page + 1}` : null,
-    previous: page > 1 ? `?page=${page - 1}` : null,
-    results,
-  };
-};
+): Promise<EnrichmentListResponse> {
+  return enrichmentApiService.fetchEnrichmentHistory(page, pageSize);
+}

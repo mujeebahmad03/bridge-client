@@ -1,4 +1,4 @@
-// Enrichment React Query Hooks
+"use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";

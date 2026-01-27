@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { CUSTOM_FIELDS_QUERY_KEY } from "@/leads/hooks";
 import {
   createContact,
   createCustomContactColumn,
@@ -165,6 +166,7 @@ export function useCreateContactColumnMutation() {
       createCustomContactColumn(payload),
     onSuccess: (newColumn) => {
       queryClient.invalidateQueries({ queryKey: contactsKeys.columns() });
+      queryClient.invalidateQueries({ queryKey: CUSTOM_FIELDS_QUERY_KEY });
       // Add new column to column order
       const store = useContactsTableStore.getState();
       const currentOrder = store.columnOrder;
