@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import { contactsKeys } from "./contacts";
 import {
   applyEnrichmentResults,
   approveEnrichment,
@@ -100,6 +101,7 @@ export const useEnrichmentWorkflow = ({
       toast.success("Enrichment results applied successfully");
       queryClient.invalidateQueries({ queryKey: enrichmentKeys.status(id) });
       queryClient.invalidateQueries({ queryKey: enrichmentKeys.history(1) });
+      queryClient.invalidateQueries({ queryKey: contactsKeys.list({}) });
     },
     onError: (error) => {
       toast.error("Failed to apply enrichment results");
