@@ -138,14 +138,14 @@ export const SYSTEM_CONTACT_COLUMNS = [
     label: "Phone",
     type: "phone",
     width: 140,
-    defaultVisible: false,
+    defaultVisible: true,
   },
   {
     id: "linkedin_profile",
     label: "LinkedIn",
     type: "url",
     width: 180,
-    defaultVisible: false,
+    defaultVisible: true,
   },
   {
     id: "acquisition_source",
