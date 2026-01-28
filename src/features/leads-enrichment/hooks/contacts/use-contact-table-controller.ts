@@ -176,12 +176,8 @@ export function useContactTableController() {
 
   // Sync columnOrder with available columns (add new columns to end)
   useEffect(() => {
-    const store = useContactsTableStore.getState();
-    const currentOrder = store.columnOrder;
-    const dataColumnIds = columns.map((c) => c.id);
-    const newColumns = dataColumnIds.filter((id) => !currentOrder.includes(id));
-    if (newColumns.length > 0) {
-      store.setColumnOrder([...currentOrder, ...newColumns]);
+    if (columns.length > 0) {
+      useContactsTableStore.getState().initializeWithColumns(columns);
     }
   }, [columns]);
 

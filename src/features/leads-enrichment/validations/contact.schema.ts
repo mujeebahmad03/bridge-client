@@ -26,7 +26,9 @@ export const contactFormSchema = z.object({
     "EMAIL",
     "OTHER",
   ]),
-  email_address: z.email("Invalid email address"),
+  email_address: z.string().email("Invalid email address"),
+  primary_phone_number: z.string().max(20).optional(),
+  linkedin_profile: z.string().url("Invalid URL").optional().or(z.literal("")),
   address: addressSchema.optional(),
   is_potential_lead: z.boolean().optional(),
 });

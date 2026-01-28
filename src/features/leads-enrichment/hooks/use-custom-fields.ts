@@ -2,15 +2,37 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { createCustomField, fetchCustomFields } from "@/leads/services";
-import type { CreateCustomFieldPayload } from "@/leads/types";
+import type { CreateCustomFieldPayload, CustomField } from "@/leads/types";
 import { inferValidatorType } from "@/leads/utils";
 
 export const CUSTOM_FIELDS_QUERY_KEY = ["customFields"] as const;
 
+/**
+ * Hook to fetch custom fields with optional search filter.
+ * Returns paginated results from the dedicated custom fields endpoint.
+ */
 export function useCustomFields(search?: string) {
   return useQuery({
-    queryKey: [...CUSTOM_FIELDS_QUERY_KEY, search],
-    queryFn: () => fetchCustomFields({ search }),
+    queryKey: [...CUSTOM_FIELDS_QUERY_KEY, { search }],
+    queryFn: async () => {
+      const response = await fetchCustomFields({ search, page_size: 1000 });
+      return response.results;
+    },
+    staleTime: 30_000,
+  });
+}
+
+/**
+ * Hook to fetch ALL custom fields (without pagination limits).
+ * Useful for column selectors and mapping dropdowns.
+ */
+export function useAllCustomFields() {
+  return useQuery<CustomField[]>({
+    queryKey: [...CUSTOM_FIELDS_QUERY_KEY, "all"],
+    queryFn: async () => {
+      const response = await fetchCustomFields({ page_size: 1000 });
+      return response.results;
+    },
     staleTime: 30_000,
   });
 }

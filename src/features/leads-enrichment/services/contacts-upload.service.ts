@@ -97,6 +97,7 @@ class ContactsUploadService {
   async fetchCustomFields(params?: {
     page?: number;
     search?: string;
+    page_size?: number;
   }): Promise<PaginatedResponse<CustomField>> {
     try {
       const queryParams: Record<string, string | number> = {};
@@ -108,6 +109,8 @@ class ContactsUploadService {
       if (params?.search) {
         queryParams.search = params.search;
       }
+
+      queryParams.page_size = params?.page_size ?? 100;
 
       const response = await apiClient.get<PaginatedResponse<CustomField>>(
         API_ROUTES.CUSTOM_FIELDS.GET_USER_CUSTOM_FIELDS,
@@ -227,6 +230,7 @@ export { ContactsUploadService };
 export async function fetchCustomFields(params?: {
   page?: number;
   search?: string;
+  page_size?: number;
 }): Promise<PaginatedResponse<CustomField>> {
   return contactsUploadService.fetchCustomFields(params);
 }

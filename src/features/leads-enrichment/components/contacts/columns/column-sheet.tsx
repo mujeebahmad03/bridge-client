@@ -1,3 +1,5 @@
+"use client";
+
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -66,14 +68,14 @@ export const ColumnSheet = () => {
 
   return (
     <SidebarSheet open={open} onOpenChange={handleOpenChange}>
-      <SidebarSheetContent className="w-full sm:max-w-lg flex flex-col p-0 h-full">
+      <SidebarSheetContent className="w-full sm:max-w-lg flex flex-col p-0 overflow-hidden">
         <SidebarSheetHeader className="px-6 pt-6 pb-4 border-b">
           <SidebarSheetTitle>{getTitle()}</SidebarSheetTitle>
           <SidebarSheetDescription>{getDescription()}</SidebarSheetDescription>
         </SidebarSheetHeader>
 
-        <ScrollArea className="flex-1 h-full">
-          <div className="px-6 py-4 space-y-6 h-full">
+        <ScrollArea className="flex-1 min-h-0">
+          <div className="px-6 py-4 space-y-6">
             {/* Column Selection & Contact Count - Only visible in initial step */}
             {currentStep === "select-type" && (
               <>

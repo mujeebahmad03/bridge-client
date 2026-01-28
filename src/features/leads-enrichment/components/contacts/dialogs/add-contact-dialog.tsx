@@ -44,6 +44,26 @@ import { useContactsTableStore } from "@/leads/stores";
 import { COUNTRY_CODES } from "@/leads/types";
 import { contactFormSchema, type ContactFormValues } from "@/leads/validations";
 
+const DEFAULT_FORM_VALUES: ContactFormValues = {
+  first_name: "",
+  last_name: "",
+  other_names: "",
+  acquisition_source: "WEBSITE",
+  email_address: "",
+  primary_phone_number: "",
+  linkedin_profile: "",
+  address: {
+    addressLine1: "",
+    addressLine2: "",
+    street: "",
+    city: "",
+    state: "",
+    zipCode: "",
+    country: "",
+  },
+  is_potential_lead: true,
+};
+
 export const AddContactDialog = () => {
   const isOpen = useContactsTableStore((s) => s.isAddDialogOpen);
   const closeAddDialog = useContactsTableStore((s) => s.closeAddDialog);
@@ -51,36 +71,22 @@ export const AddContactDialog = () => {
 
   const form = useForm<ContactFormValues>({
     resolver: zodResolver(contactFormSchema),
-    defaultValues: {
-      first_name: "",
-      last_name: "",
-      other_names: "",
-      acquisition_source: "WEBSITE",
-      email_address: "",
-      address: {
-        addressLine1: "",
-        addressLine2: "",
-        street: "",
-        city: "",
-        state: "",
-        zipCode: "",
-        country: "",
-      },
-      is_potential_lead: true,
-    },
+    defaultValues: DEFAULT_FORM_VALUES,
   });
 
-  const onSubmit = async (values: ContactFormValues) => {
+  const handleSubmit = async (values: ContactFormValues) => {
     await createContactMutation.mutateAsync({
       first_name: values.first_name,
       last_name: values.last_name,
       other_names: values.other_names ?? "",
       acquisition_source: values.acquisition_source,
       email_address: values.email_address,
+      primary_phone_number: values.primary_phone_number,
+      linkedin_profile: values.linkedin_profile,
       address: values.address,
       is_potential_lead: values.is_potential_lead,
     });
-    form.reset();
+    form.reset(DEFAULT_FORM_VALUES);
     closeAddDialog();
     toast.success("Contact created successfully");
   };
@@ -88,7 +94,7 @@ export const AddContactDialog = () => {
   const handleOpenChange = (open: boolean) => {
     if (!open) {
       closeAddDialog();
-      form.reset();
+      form.reset(DEFAULT_FORM_VALUES);
     }
   };
 
@@ -103,7 +109,10 @@ export const AddContactDialog = () => {
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form
+            onSubmit={form.handleSubmit(handleSubmit)}
+            className="space-y-4"
+          >
             {/* Basic Info */}
             <div className="grid grid-cols-2 gap-4">
               <FormField
@@ -167,29 +176,67 @@ export const AddContactDialog = () => {
               )}
             />
 
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="primary_phone_number"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone Number</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="tel"
+                        placeholder="+1 234 567 8900"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="acquisition_source"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Acquisition Source *</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select source" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {ACQUISITION_SOURCE_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
             <FormField
               control={form.control}
-              name="acquisition_source"
+              name="linkedin_profile"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Acquisition Source *</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select source" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {ACQUISITION_SOURCE_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormLabel>LinkedIn Profile</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="url"
+                      placeholder="https://linkedin.com/in/johndoe"
+                      {...field}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -339,7 +386,11 @@ export const AddContactDialog = () => {
               >
                 Cancel
               </Button>
-              <Button type="submit">Create Contact</Button>
+              <Button type="submit" disabled={createContactMutation.isPending}>
+                {createContactMutation.isPending
+                  ? "Creating..."
+                  : "Create Contact"}
+              </Button>
             </DialogFooter>
           </form>
         </Form>

@@ -8,7 +8,10 @@ import type {
   ContactFieldId,
   Side,
 } from "@/leads/types";
-import { DEFAULT_CONTACT_COLUMNS } from "@/leads/types";
+import {
+  DEFAULT_VISIBLE_COLUMN_IDS,
+  SYSTEM_CONTACT_COLUMNS,
+} from "@/leads/types";
 
 // ==================== Store Types ====================
 
@@ -49,6 +52,9 @@ interface ContactsTableState {
   // Navigation model (derived from current list + visible columns order)
   navigationContactIds: string[];
   navigationColumnIds: ContactFieldId[];
+
+  // Hydration flag for SSR
+  _hasHydrated: boolean;
 }
 
 interface ContactsTableActions {
@@ -97,17 +103,27 @@ interface ContactsTableActions {
   openAddColumnSheet: () => void;
   openEditColumnSheet: (column: ContactColumn) => void;
   setIsColumnSheetOpen: (open: boolean) => void;
+
+  // Initialize with fetched columns (call after columns are loaded)
+  initializeWithColumns: (columns: ContactColumn[]) => void;
+
+  setHasHydrated: (value: boolean) => void;
 }
 
 type ContactsTableStore = ContactsTableState & ContactsTableActions;
 
+// Use system column IDs for initial state
+const INITIAL_COLUMN_ORDER = SYSTEM_CONTACT_COLUMNS.map(
+  (c) => c.id
+) as ContactFieldId[];
+
 const initialState: ContactsTableState = {
   searchValue: "",
-  visibleColumnIds: new Set(DEFAULT_CONTACT_COLUMNS.map((c) => c.id)),
+  visibleColumnIds: new Set(DEFAULT_VISIBLE_COLUMN_IDS as ContactFieldId[]),
   columnWidths: new Map(),
   sortColumn: null,
   sortDirection: null,
-  columnOrder: DEFAULT_CONTACT_COLUMNS.map((c) => c.id),
+  columnOrder: INITIAL_COLUMN_ORDER,
   pinnedColumns: { left: [], right: [] },
   selectedRowIds: new Set(),
   activeCell: null,
@@ -118,7 +134,8 @@ const initialState: ContactsTableState = {
   columnSheetMode: "add",
   selectedSheetColumn: null,
   navigationContactIds: [],
-  navigationColumnIds: DEFAULT_CONTACT_COLUMNS.map((c) => c.id),
+  navigationColumnIds: INITIAL_COLUMN_ORDER,
+  _hasHydrated: false,
 };
 
 // Type for serialized persisted state (Set/Map converted to arrays)
@@ -181,8 +198,9 @@ const customStorage = {
           ) as [ContactFieldId, number][];
         }
       }
-
-      localStorage.setItem(name, JSON.stringify(serialized));
+      if (typeof window !== "undefined") {
+        localStorage.setItem(name, JSON.stringify(serialized));
+      }
     } catch (error) {
       console.error("Error persisting state:", error);
     }
@@ -414,6 +432,30 @@ export const useContactsTableStore = create<ContactsTableStore>()(
         }),
 
       setIsColumnSheetOpen: (open) => set({ isColumnSheetOpen: open }),
+
+      // Initialize column order with fetched columns (adds new columns to end)
+      initializeWithColumns: (columns) =>
+        set((state) => {
+          const columnIds = columns.map((c) => c.id);
+          const currentOrder = state.columnOrder;
+
+          // Find new columns not in current order
+          const newColumns = columnIds.filter(
+            (id) => !currentOrder.includes(id)
+          );
+
+          // Only update if there are new columns
+          if (newColumns.length === 0) {
+            return state;
+          }
+
+          // Merge: keep existing order, add new columns at end
+          const updatedOrder = [...currentOrder, ...newColumns];
+
+          return { columnOrder: updatedOrder };
+        }),
+
+      setHasHydrated: (value) => set({ _hasHydrated: value }),
     }),
     {
       name: "contacts-table-config",
@@ -427,6 +469,9 @@ export const useContactsTableStore = create<ContactsTableStore>()(
         sortColumn: state.sortColumn,
         sortDirection: state.sortDirection,
       }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
     }
   )
 );

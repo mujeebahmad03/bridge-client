@@ -82,6 +82,10 @@ export function useContactsQuery(params: { search?: string }) {
   });
 }
 
+/**
+ * Hook to fetch contact columns including system columns and ALL custom fields.
+ * Uses the dedicated custom fields endpoint to ensure complete list.
+ */
 export function useContactColumnsQuery() {
   return useQuery({
     queryKey: contactsKeys.columns(),

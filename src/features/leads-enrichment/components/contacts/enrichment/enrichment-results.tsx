@@ -70,7 +70,7 @@ export function EnrichmentResults({
     const count = Object.values(parsed_results).filter((record) => {
       const value = getFieldValue(record[field]);
 
-      return value && value.trim() !== "";
+      return value && String(value).trim() !== "";
     }).length;
 
     return { field, count, total: contacts.length };
@@ -81,7 +81,7 @@ export function EnrichmentResults({
 
   return (
     <>
-      <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-5 overflow-x-auto">
         {/* Header Badges */}
         <div className="flex flex-wrap items-center gap-2">
           <Badge className="bg-green-500/10 text-green-600 border-green-500/20 font-normal">
@@ -106,7 +106,7 @@ export function EnrichmentResults({
 
         {/* Stats Summary */}
         {fieldsWithData.length > 0 && (
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 gap-3 w-full">
             {fieldsWithData.slice(0, 4).map(({ field, count, total }) => (
               <div
                 key={field}
@@ -124,9 +124,9 @@ export function EnrichmentResults({
           </div>
         )}
 
-        {/* Results Table with constrained height */}
+        {/* Results Table with constrained height and horizontal scroll */}
         <div className="rounded-lg border bg-card overflow-hidden">
-          <div className="overflow-auto max-h-[240px]">
+          <div className="overflow-x-auto overflow-y-auto max-h-[240px]">
             <Table>
               <TableHeader className="sticky top-0 bg-card z-10">
                 <TableRow>
@@ -170,28 +170,30 @@ export function EnrichmentResults({
 
 // Extracted cell value component for cleaner rendering
 function CellValue({ value }: { value: string }) {
-  if (!value) {
+  const normalizedValue = String(value).trim();
+
+  if (!normalizedValue) {
     return <span className="text-muted-foreground">—</span>;
   }
 
-  if (isUrl(value)) {
+  if (isUrl(normalizedValue)) {
     return (
       <a
-        href={value}
+        href={normalizedValue}
         target="_blank"
         rel="noopener noreferrer"
         className="inline-flex items-center gap-1 text-primary hover:underline max-w-[140px]"
       >
         <ExternalLink className="h-3 w-3 shrink-0" />
         <span className="truncate">
-          {value.replace(/^https?:\/\/(www\.)?/, "")}
+          {normalizedValue.replace(/^https?:\/\/(www\.)?/, "")}
         </span>
       </a>
     );
   }
 
   // Handle boolean-like values
-  if (value.toLowerCase() === "true") {
+  if (normalizedValue.toLowerCase() === "true") {
     return (
       <Badge
         variant="secondary"
@@ -202,7 +204,7 @@ function CellValue({ value }: { value: string }) {
     );
   }
 
-  if (value.toLowerCase() === "false") {
+  if (normalizedValue.toLowerCase() === "false") {
     return (
       <Badge variant="secondary" className="bg-muted text-muted-foreground">
         No
@@ -212,7 +214,7 @@ function CellValue({ value }: { value: string }) {
 
   return (
     <span className="text-foreground truncate block max-w-[140px]">
-      {value}
+      {normalizedValue}
     </span>
   );
 }

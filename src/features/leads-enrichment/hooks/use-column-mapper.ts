@@ -36,8 +36,8 @@ export function useColumnMapper() {
   );
 
   const customFields = useMemo(
-    () => customFieldsData?.results ?? [],
-    [customFieldsData?.results]
+    () => customFieldsData ?? [],
+    [customFieldsData]
   );
 
   const allTargetFields = useMemo<MappableField[]>(() => {

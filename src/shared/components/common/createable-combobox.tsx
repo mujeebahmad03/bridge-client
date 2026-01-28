@@ -111,7 +111,7 @@ export function CreateableCombobox({
             aria-expanded={open}
             disabled={isCreating ?? disabled}
             className={cn(
-              "w-full justify-between font-normal",
+              "justify-between font-normal flex-1",
               !displayValue && "text-muted-foreground"
             )}
           >

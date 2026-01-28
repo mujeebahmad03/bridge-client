@@ -3,19 +3,22 @@ import { apiClient, ApiError } from "@/lib/api-client";
 
 import { type ApiResponse } from "@/types/api";
 
-import { createCustomField } from "./contacts-upload.service";
+import { fetchCustomFields } from "./contacts-upload.service";
 import {
   type Contact,
   type ContactAddress,
   type ContactColumn,
+  type ContactColumnType,
   type ContactFieldId,
   type ContactFieldValue,
   type CreateContactPayload,
   type CustomField,
   type CustomFieldId,
-  DEFAULT_CONTACT_COLUMNS,
+  SYSTEM_CONTACT_COLUMNS,
   type ValidatorType,
 } from "@/leads/types";
+
+// ==================== Constants ====================
 
 const SYSTEM_KEYS = new Set([
   "external_id",
@@ -32,11 +35,15 @@ const SYSTEM_KEYS = new Set([
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+// ==================== Type Guards ====================
+
 function isCustomFieldUuid(key: string): boolean {
   return UUID_REGEX.test(key) && !SYSTEM_KEYS.has(key);
 }
 
-// ==================== API wrapper (unwrap response, handle errors) ====================
+function isCustomFieldId(fieldId: ContactFieldId): fieldId is CustomFieldId {
+  return String(fieldId).startsWith("cf-");
+}
 
 /** Type guard: payload is wrapped { status, data } ApiResponse */
 function isWrappedApiResponse<T>(payload: unknown): payload is ApiResponse<T> {
@@ -54,6 +61,47 @@ function isWrappedApiResponse<T>(payload: unknown): payload is ApiResponse<T> {
   const st = s as Record<string, unknown>;
   return typeof st.status_code === "number";
 }
+
+// ==================== Utility Functions ====================
+
+const getNestedValue = (
+  obj: Record<string, unknown>,
+  path: string
+): unknown => {
+  return path.split(".").reduce((acc, part) => {
+    if (acc && typeof acc === "object") {
+      return (acc as Record<string, unknown>)[part];
+    }
+    return undefined;
+  }, obj as unknown);
+};
+
+function validatorTypeToColumnType(v: ValidatorType): ContactColumnType {
+  switch (v) {
+    case "EMAIL_ADDRESS":
+      return "email";
+    case "PHONE":
+      return "phone";
+    case "URL":
+      return "url";
+    case "TEXT":
+    case "NUMBER":
+    case "NONE":
+    default:
+      return "text";
+  }
+}
+
+function customFieldToContactColumn(f: CustomField): ContactColumn {
+  return {
+    id: `cf-${f.id}` as CustomFieldId,
+    label: f.name,
+    type: validatorTypeToColumnType(f.validator_type),
+    width: 160,
+  };
+}
+
+// ==================== API Service Class ====================
 
 class ContactsApiService {
   private isSuccessResponse(statusCode: number): boolean {
@@ -100,7 +148,8 @@ class ContactsApiService {
 
   /**
    * Fetch contacts and custom fields from the datatable endpoint in a single API call.
-   * This is the primary method - other methods delegate to this to avoid duplicate requests.
+   * Note: Custom fields from datatable may be incomplete. Use fetchAllCustomFields
+   * for a complete list of custom fields.
    */
   async fetchContactsWithCustomFields(params?: { search?: string }): Promise<{
     contacts: Contact[];
@@ -184,6 +233,8 @@ class ContactsApiService {
 
 const contactsApiService = new ContactsApiService();
 
+// ==================== Helper Functions ====================
+
 /** Build minimal PATCH body for a single contact field update. */
 function buildUpdateFieldPayload(
   fieldId: ContactFieldId,
@@ -196,11 +247,12 @@ function buildUpdateFieldPayload(
     return { custom_fields: { [uuid]: value ?? null } };
   }
   const key = String(fieldId);
-  if (key === "address.city") {
-    return { address: { city: value ?? "" } };
-  }
-  if (key === "address.country") {
-    return { address: { country: value ?? "" } };
+  // Handle nested address fields
+  if (key.startsWith("address.")) {
+    const addressKey = key.replace("address.", "");
+    // Convert camelCase to snake_case for API
+    const snakeKey = addressKey.replace(/([A-Z])/g, "_$1").toLowerCase();
+    return { address: { [snakeKey]: value ?? "" } };
   }
   return { [key]: value };
 }
@@ -208,8 +260,6 @@ function buildUpdateFieldPayload(
 /**
  * Extract custom fields array from datatable response.
  * The payload is the unwrapped data object: { paginator?, custom_fields?, data? }.
- * @param payload - The unwrapped datatable response
- * @returns Array of CustomField objects
  */
 function extractCustomFieldsFromDatatable(payload: unknown): CustomField[] {
   if (!payload || typeof payload !== "object") {
@@ -233,7 +283,7 @@ function extractCustomFieldsFromDatatable(payload: unknown): CustomField[] {
   });
 }
 
-/** Extract contact list from datatable response: { data } / { paginator, data } / { results } / array. */
+/** Extract contact list from datatable response */
 function extractContactList(payload: unknown): Record<string, unknown>[] {
   if (Array.isArray(payload)) {
     return payload as Record<string, unknown>[];
@@ -261,7 +311,7 @@ const DEFAULT_ADDRESS: ContactAddress = {
   country: "",
 };
 
-/** Parse Python-repr address string, e.g. "{'city': 'Seattle', 'addressLine2': None}". */
+/** Parse Python-repr address string */
 function parseAddressString(s: string): ContactAddress {
   const out: ContactAddress = { ...DEFAULT_ADDRESS };
   if (!s || typeof s !== "string") {
@@ -315,8 +365,6 @@ function parseAddressString(s: string): ContactAddress {
 
 /**
  * Normalize backend contact to Contact type.
- * Uses `id` (backend UUID) as the primary identifier, with `external_id` as fallback.
- * Parses address strings and extracts custom fields from both top-level UUIDs and nested custom_fields object.
  */
 function normalizeContact(raw: Record<string, unknown>): Contact {
   const rawAddress = raw.address;
@@ -357,12 +405,13 @@ function normalizeContact(raw: Record<string, unknown>): Contact {
 
   const now = new Date().toISOString();
   return {
-    // Use backend id (UUID) as primary identifier, fallback to external_id
     id: String(raw.id ?? raw.external_id ?? ""),
     first_name: String(raw.first_name ?? ""),
     last_name: String(raw.last_name ?? ""),
     other_names: String(raw.other_names ?? ""),
     email_address: String(raw.email_address ?? ""),
+    primary_phone_number: String(raw.primary_phone_number ?? ""),
+    linkedin_profile: String(raw.linkedin_profile ?? ""),
     acquisition_source: (raw.acquisition_source ??
       "WEBSITE") as Contact["acquisition_source"],
     address,
@@ -373,7 +422,7 @@ function normalizeContact(raw: Record<string, unknown>): Contact {
   };
 }
 
-/** Build create-contact request body (snake_case address for typical DRF). */
+/** Build create-contact request body */
 function toCreateContactRequest(
   payload: CreateContactPayload
 ): Record<string, unknown> {
@@ -385,6 +434,15 @@ function toCreateContactRequest(
     acquisition_source: payload.acquisition_source,
     is_potential_lead: payload.is_potential_lead ?? true,
   };
+
+  if (payload.primary_phone_number) {
+    body.primary_phone_number = payload.primary_phone_number;
+  }
+
+  if (payload.linkedin_profile) {
+    body.linkedin_profile = payload.linkedin_profile;
+  }
+
   const addr = payload.address;
   if (
     addr &&
@@ -409,46 +467,32 @@ function toCreateContactRequest(
   return body;
 }
 
-// -------------------- Columns (system + custom) --------------------
+// ==================== Exported Functions ====================
 
-function validatorTypeToColumnType(v: ValidatorType): ContactColumn["type"] {
-  switch (v) {
-    case "EMAIL_ADDRESS":
-      return "email";
-    case "PHONE":
-      return "phone";
-    case "TEXT":
-    case "NUMBER":
-    case "URL":
-    case "NONE":
-    default:
-      return "text";
-  }
-}
-
-function customFieldToContactColumn(f: CustomField): ContactColumn {
-  return {
-    id: `cf-${f.id}` as CustomFieldId,
-    label: f.name,
-    type: validatorTypeToColumnType(f.validator_type),
-    width: 160,
-  };
+/**
+ * Fetch contact columns including system columns and ALL custom fields.
+ * Uses the dedicated custom fields endpoint to ensure all fields are included.
+ */
+export async function fetchContactColumns(): Promise<ContactColumn[]> {
+  const response = await fetchCustomFields({ page_size: 1000 });
+  const custom = response.results.map(customFieldToContactColumn);
+  return [...SYSTEM_CONTACT_COLUMNS, ...custom];
 }
 
 /**
- * Fetch contact columns including system columns and custom fields.
- * Custom fields are extracted from the datatable response.
+ * Fetch all custom fields using the dedicated endpoint.
+ * This is more reliable than extracting from datatable response.
  */
-export async function fetchContactColumns(): Promise<ContactColumn[]> {
-  const { customFields } = await fetchContactsWithCustomFields();
-  const custom = customFields.map(customFieldToContactColumn);
-  return [...DEFAULT_CONTACT_COLUMNS, ...custom];
+export async function fetchAllCustomFields(): Promise<CustomField[]> {
+  const response = await fetchCustomFields({ page_size: 1000 });
+  return response.results;
 }
 
 export async function createCustomContactColumn(payload: {
   label: string;
-  type?: ContactColumn["type"];
+  type?: ContactColumnType;
 }): Promise<ContactColumn> {
+  const { createCustomField } = await import("./contacts-upload.service");
   const created = await createCustomField({
     name: payload.label,
     validator_type: "TEXT",
@@ -457,19 +501,15 @@ export async function createCustomContactColumn(payload: {
   return customFieldToContactColumn(created);
 }
 
-// -------------------- Contacts with Custom Fields (single API call) --------------------
-
 /**
  * Fetch contacts and custom fields from the datatable endpoint in a single API call.
- * This is the recommended method when both contacts and custom fields are needed.
+ * Note: For complete custom fields list, use fetchAllCustomFields instead.
  */
 export async function fetchContactsWithCustomFields(params?: {
   search?: string;
 }): Promise<{ contacts: Contact[]; customFields: CustomField[] }> {
   return contactsApiService.fetchContactsWithCustomFields(params);
 }
-
-// -------------------- Contacts (real API) --------------------
 
 export async function fetchContacts(params?: {
   search?: string;
@@ -485,24 +525,6 @@ export async function createContact(
 
 export async function deleteContacts(ids: string[]): Promise<void> {
   return contactsApiService.deleteContacts(ids);
-}
-
-// -------------------- Field update helpers --------------------
-
-const getNestedValue = (
-  obj: Record<string, unknown>,
-  path: string
-): unknown => {
-  return path.split(".").reduce((acc, part) => {
-    if (acc && typeof acc === "object") {
-      return (acc as Record<string, unknown>)[part];
-    }
-    return undefined;
-  }, obj as unknown);
-};
-
-function isCustomFieldId(fieldId: ContactFieldId): fieldId is CustomFieldId {
-  return String(fieldId).startsWith("cf-");
 }
 
 export function getContactFieldValue(

@@ -22,6 +22,9 @@ export function getFieldValue(
 
 // Helper to check if value is a URL
 export function isUrl(value: string): boolean {
+  if (typeof value !== "string") {
+    return false;
+  }
   return value.startsWith("http://") || value.startsWith("https://");
 }
 

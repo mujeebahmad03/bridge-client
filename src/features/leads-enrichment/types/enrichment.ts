@@ -90,8 +90,6 @@ export interface EnrichmentStatusResponse {
   error_message?: string;
 }
 
-// @/leads/types/enrichment.ts
-
 export interface EnrichmentFieldResult {
   value: string;
   validator_type: string;
