@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import {
@@ -9,15 +9,16 @@ import {
   approveEnrichment,
   checkEnrichmentStatus,
   createEnrichmentPreview,
-  fetchEnrichmentHistory,
   fetchEnrichmentPresets,
   getEnrichmentResults,
 } from "@/leads/services";
-import {
-  type CreatePreviewRequest,
-  type EnrichmentPreviewResponse,
-  type EnrichmentResultsResponse,
-  type EnrichmentWorkflowStep,
+import type {
+  Contact,
+  CreatePreviewRequest,
+  EnrichmentPresetValue,
+  EnrichmentPreviewResponse,
+  EnrichmentType,
+  EnrichmentWorkflowStep,
 } from "@/leads/types";
 
 // Query keys
@@ -34,13 +35,38 @@ export const useEnrichmentPresets = () => {
   return useQuery({
     queryKey: enrichmentKeys.presets(),
     queryFn: fetchEnrichmentPresets,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
   });
 };
 
-// Create preview mutation
-export const useCreatePreview = () => {
-  return useMutation({
+// Hook options
+interface UseEnrichmentWorkflowOptions {
+  contactIds: string[];
+  contacts: Contact[];
+  onStepChange?: (step: EnrichmentWorkflowStep) => void;
+  onComplete?: () => void;
+}
+
+export const useEnrichmentWorkflow = ({
+  contactIds,
+  contacts,
+  onStepChange,
+  onComplete,
+}: UseEnrichmentWorkflowOptions) => {
+  const queryClient = useQueryClient();
+
+  const [step, setStep] = useState<EnrichmentWorkflowStep>("select-type");
+  const [preview, setPreview] = useState<EnrichmentPreviewResponse | null>(
+    null
+  );
+
+  const enrichmentRequestId = preview?.enrichment_request_id ?? null;
+
+  // Presets query
+  const presetsQuery = useEnrichmentPresets();
+
+  // Mutations
+  const createPreviewMutation = useMutation({
     mutationFn: ({
       request,
       contacts,
@@ -58,89 +84,21 @@ export const useCreatePreview = () => {
       console.error("Create preview error:", error);
     },
   });
-};
 
-// Approve enrichment mutation
-export const useApproveEnrichment = () => {
-  return useMutation({
+  const approveMutation = useMutation({
     mutationFn: approveEnrichment,
-    onSuccess: () => {
-      toast.success("Enrichment approved and processing started");
-    },
     onError: (error) => {
-      toast.error("Failed to approve enrichment");
+      toast.error("Failed to start enrichment");
       console.error("Approve error:", error);
-    },
-  });
-};
-
-// Status polling hook
-export const useEnrichmentStatus = (
-  enrichmentRequestId: string | null,
-  enabled: boolean = false
-) => {
-  const [isPolling, setIsPolling] = useState(false);
-
-  const query = useQuery({
-    queryKey: enrichmentKeys.status(enrichmentRequestId ?? ""),
-    queryFn: () => checkEnrichmentStatus(enrichmentRequestId ?? ""),
-    enabled: enabled && !!enrichmentRequestId && isPolling,
-    refetchInterval: (query) => {
-      const status = query.state.data?.status;
-      if (
-        status === "RESULTS_READY" ||
-        status === "SUCCESSFUL" ||
-        status === "FAILED"
-      ) {
-        return false; // Stop polling
-      }
-      return 2000; // Poll every 2 seconds
+      setStep("select-type");
     },
   });
 
-  const startPolling = useCallback(() => setIsPolling(true), []);
-  const stopPolling = useCallback(() => setIsPolling(false), []);
-
-  const isFinalStatus = useMemo(() => {
-    const status = query.data?.status;
-    return (
-      status === "RESULTS_READY" ||
-      status === "SUCCESSFUL" ||
-      status === "FAILED"
-    );
-  }, [query.data?.status]);
-
-  return {
-    ...query,
-    isPolling: isPolling && !isFinalStatus,
-    startPolling,
-    stopPolling,
-  };
-};
-
-// Get results
-export const useEnrichmentResults = (
-  enrichmentRequestId: string | null,
-  enabled: boolean = false
-) => {
-  return useQuery({
-    queryKey: enrichmentKeys.results(enrichmentRequestId ?? ""),
-    queryFn: () => getEnrichmentResults(enrichmentRequestId ?? ""),
-    enabled: enabled && !!enrichmentRequestId,
-  });
-};
-
-// Apply results mutation
-export const useApplyResults = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  const applyMutation = useMutation({
     mutationFn: applyEnrichmentResults,
-    onSuccess: (_, enrichmentRequestId) => {
+    onSuccess: (_, id) => {
       toast.success("Enrichment results applied successfully");
-      queryClient.invalidateQueries({
-        queryKey: enrichmentKeys.status(enrichmentRequestId),
-      });
+      queryClient.invalidateQueries({ queryKey: enrichmentKeys.status(id) });
       queryClient.invalidateQueries({ queryKey: enrichmentKeys.history(1) });
     },
     onError: (error) => {
@@ -148,144 +106,209 @@ export const useApplyResults = () => {
       console.error("Apply results error:", error);
     },
   });
-};
 
-// Enrichment history
-export const useEnrichmentHistory = (page: number = 1) => {
-  return useQuery({
-    queryKey: enrichmentKeys.history(page),
-    queryFn: () => fetchEnrichmentHistory(page),
+  // Status polling - stops when RESULTS_READY, SUCCESSFUL, or FAILED
+  const statusQuery = useQuery({
+    queryKey: enrichmentKeys.status(enrichmentRequestId ?? ""),
+    queryFn: () => {
+      if (!enrichmentRequestId) {
+        throw new Error("Missing enrichment request id");
+      }
+      return checkEnrichmentStatus(enrichmentRequestId);
+    },
+    enabled: !!enrichmentRequestId && step === "processing",
+    refetchInterval: (query) => {
+      const status = query.state.data?.status;
+      // Stop polling when results are ready or final state reached
+      if (
+        status === "RESULTS_READY" ||
+        status === "SUCCESSFUL" ||
+        status === "FAILED"
+      ) {
+        return false;
+      }
+      return 2000;
+    },
   });
-};
 
-// Combined workflow hook
-export const useEnrichmentWorkflow = (selectedContactIds: string[]) => {
-  const queryClient = useQueryClient();
-  const [baseStep, setBaseStep] =
-    useState<EnrichmentWorkflowStep>("select-type");
-  const [preview, setPreview] = useState<EnrichmentPreviewResponse | null>(
-    null
-  );
-
-  const presetsQuery = useEnrichmentPresets();
-  const createPreviewMutation = useCreatePreview();
-  const approveMutation = useApproveEnrichment();
-  const applyMutation = useApplyResults();
-
-  const enrichmentRequestId = preview?.enrichment_request_id ?? null;
-
-  const statusQuery = useEnrichmentStatus(
-    enrichmentRequestId,
-    baseStep === "processing"
-  );
-
-  const resultsQuery = useEnrichmentResults(
-    enrichmentRequestId,
-    statusQuery.data?.status === "RESULTS_READY"
-  );
-
-  const step: EnrichmentWorkflowStep = useMemo(() => {
-    if (baseStep === "processing") {
-      if (statusQuery.data?.status === "RESULTS_READY") {
-        return "results";
+  // Results query - fetch once when status is RESULTS_READY
+  const resultsQuery = useQuery({
+    queryKey: enrichmentKeys.results(enrichmentRequestId ?? ""),
+    queryFn: () => {
+      if (!enrichmentRequestId) {
+        throw new Error("Missing enrichment request id");
       }
-      if (statusQuery.data?.status === "FAILED") {
-        return "select-type";
-      }
+      return getEnrichmentResults(enrichmentRequestId);
+    },
+    enabled:
+      !!enrichmentRequestId && statusQuery.data?.status === "RESULTS_READY",
+    staleTime: Infinity, // Don't refetch once we have results
+  });
+
+  // Derived state
+  const status = statusQuery.data;
+  const results = resultsQuery.data;
+
+  // Check if we have actual results data
+  const hasResults = !!(
+    results?.parsed_results && Object.keys(results.parsed_results).length > 0
+  );
+
+  const isApplied = status?.status === "SUCCESSFUL";
+  const canApply = hasResults && !isApplied && !applyMutation.isPending;
+
+  const effectiveStep: EnrichmentWorkflowStep = useMemo(() => {
+    if (status?.status === "FAILED") {
+      return "select-type";
     }
-    return baseStep;
-  }, [baseStep, statusQuery.data?.status]);
+    if (step === "processing" && hasResults) {
+      return "results";
+    }
+    return step;
+  }, [hasResults, status?.status, step]);
+
+  const isPolling = useMemo(() => {
+    if (!enrichmentRequestId) {
+      return false;
+    }
+    if (effectiveStep !== "processing") {
+      return false;
+    }
+    if (hasResults) {
+      return false;
+    }
+    return !(
+      status?.status === "RESULTS_READY" ||
+      status?.status === "SUCCESSFUL" ||
+      status?.status === "FAILED"
+    );
+  }, [effectiveStep, enrichmentRequestId, hasResults, status?.status]);
+
+  // Notify parent of step changes
+  useEffect(() => {
+    onStepChange?.(effectiveStep);
+  }, [effectiveStep, onStepChange]);
+
+  // Notify parent when enrichment is applied
+  useEffect(() => {
+    if (isApplied) {
+      onComplete?.();
+    }
+  }, [isApplied, onComplete]);
+
+  // Side-effect only: show error toast when enrichment fails
+  const lastFailedRequestIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (baseStep !== "processing") {
+    if (status?.status !== "FAILED") {
       return;
     }
-    if (statusQuery.data?.status !== "FAILED") {
+    if (lastFailedRequestIdRef.current === status.id) {
       return;
     }
-    toast.error(
-      `Enrichment failed: ${statusQuery.data?.error_message ?? "Unknown error"}`
-    );
-  }, [baseStep, statusQuery.data?.error_message, statusQuery.data?.status]);
+    lastFailedRequestIdRef.current = status.id;
+    toast.error(status.error_message ?? "Enrichment failed");
+  }, [status?.error_message, status?.id, status?.status]);
 
-  const results: EnrichmentResultsResponse | null = resultsQuery.data ?? null;
+  // Build contacts data for API
+  const contactsData = useMemo(
+    () =>
+      contacts.map((c) => ({
+        id: c.id,
+        first_name: c.first_name,
+        last_name: c.last_name,
+        email_address: c.email_address,
+      })),
+    [contacts]
+  );
 
-  const createPreview = async (
-    request: CreatePreviewRequest,
-    contacts: Array<{
-      id: string;
-      first_name: string;
-      last_name: string;
-      email_address: string;
-    }>
-  ) => {
-    const result = await createPreviewMutation.mutateAsync({
-      request,
-      contacts,
-    });
-    setPreview(result);
-    setBaseStep("preview");
-    return result;
-  };
+  // Start enrichment with auto-approve
+  const startEnrichment = useCallback(
+    async (
+      type: EnrichmentType,
+      preset?: EnrichmentPresetValue,
+      description?: string
+    ) => {
+      const request: CreatePreviewRequest =
+        type === "PRESET"
+          ? {
+              contact_ids: contactIds,
+              enrichment_type: "PRESET",
+              preset_action: preset,
+            }
+          : {
+              contact_ids: contactIds,
+              enrichment_type: "CUSTOM",
+              enrichment_description: description,
+            };
 
-  const approve = async () => {
-    if (!preview) {
+      try {
+        const previewResult = await createPreviewMutation.mutateAsync({
+          request,
+          contacts: contactsData,
+        });
+        setPreview(previewResult);
+
+        setStep("processing");
+
+        await approveMutation.mutateAsync(previewResult.enrichment_request_id);
+        toast.success("Enrichment started");
+
+        return previewResult;
+      } catch (error) {
+        setStep("select-type");
+        throw error;
+      }
+    },
+    [contactIds, contactsData, createPreviewMutation, approveMutation]
+  );
+
+  // Apply results
+  const applyResults = useCallback(async () => {
+    if (!enrichmentRequestId) {
       return;
     }
-    await approveMutation.mutateAsync(preview.enrichment_request_id);
-    setBaseStep("processing");
-    statusQuery.startPolling();
-  };
+    await applyMutation.mutateAsync(enrichmentRequestId);
+  }, [enrichmentRequestId, applyMutation]);
 
-  const apply = async () => {
-    if (!preview) {
-      return;
-    }
-    await applyMutation.mutateAsync(preview.enrichment_request_id);
-  };
-
-  const reset = () => {
+  // Reset workflow
+  const reset = useCallback(() => {
     const id = enrichmentRequestId;
-    setBaseStep("select-type");
+    setStep("select-type");
     setPreview(null);
-    statusQuery.stopPolling();
+
     if (id) {
       queryClient.removeQueries({ queryKey: enrichmentKeys.status(id) });
       queryClient.removeQueries({ queryKey: enrichmentKeys.results(id) });
     }
-  };
-
-  const goBack = () => {
-    if (baseStep === "preview") {
-      setBaseStep("select-type");
-      setPreview(null);
-    }
-  };
+  }, [enrichmentRequestId, queryClient]);
 
   return {
     // State
-    step,
+    step: effectiveStep,
     preview,
-    results,
-    selectedContactIds,
+    results: hasResults ? results : null,
+    status,
+    contactCount: contacts.length,
 
-    // Queries
+    // Presets
     presets: presetsQuery.data ?? [],
     isLoadingPresets: presetsQuery.isLoading,
-    status: statusQuery.data,
-    isPolling: statusQuery.isPolling,
+
+    // Flags
+    isPolling,
+    isApplied,
+    canApply,
+    hasResults,
 
     // Loading states
-    isCreatingPreview: createPreviewMutation.isPending,
-    isApproving: approveMutation.isPending,
+    isStarting: createPreviewMutation.isPending || approveMutation.isPending,
     isApplying: applyMutation.isPending,
     isLoadingResults: resultsQuery.isLoading,
 
     // Actions
-    createPreview,
-    approve,
-    apply,
+    startEnrichment,
+    applyResults,
     reset,
-    goBack,
   };
 };

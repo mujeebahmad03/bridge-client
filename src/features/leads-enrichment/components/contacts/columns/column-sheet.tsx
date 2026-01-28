@@ -12,12 +12,14 @@ import {
   SidebarSheet,
   SidebarSheetContent,
   SidebarSheetDescription,
+  SidebarSheetFooter,
   SidebarSheetHeader,
   SidebarSheetTitle,
 } from "@/components/ui/sidebar-sheet";
 
-import { EnrichmentPanel } from "../enrichment/enrichment-panel";
+import { EnrichmentPanelContent, EnrichmentPanelFooter } from "../enrichment";
 import { ColumnFieldSelector } from "./column-field-selector";
+import { useEnrichmentPanelController } from "@/leads/hooks";
 import { useColumnSheetController } from "@/leads/hooks/contacts";
 
 const CONTACT_COUNT_OPTIONS = [
@@ -53,16 +55,25 @@ export const ColumnSheet = () => {
     getDescription,
   } = useColumnSheetController();
 
+  // Initialize enrichment controller
+  // Key forces remount on open to reset state, avoiding stale workflow state
+  const enrichmentController = useEnrichmentPanelController({
+    contactIds,
+    contactsToEnrich,
+    onStepChange: setCurrentStep,
+    onComplete: () => handleOpenChange(false),
+  });
+
   return (
     <SidebarSheet open={open} onOpenChange={handleOpenChange}>
-      <SidebarSheetContent className="w-full sm:max-w-lg flex flex-col p-0">
+      <SidebarSheetContent className="w-full sm:max-w-lg flex flex-col p-0 h-full">
         <SidebarSheetHeader className="px-6 pt-6 pb-4 border-b">
           <SidebarSheetTitle>{getTitle()}</SidebarSheetTitle>
           <SidebarSheetDescription>{getDescription()}</SidebarSheetDescription>
         </SidebarSheetHeader>
 
-        <ScrollArea className="flex-1">
-          <div className="px-6 py-4 space-y-6">
+        <ScrollArea className="flex-1 h-full">
+          <div className="px-6 py-4 space-y-6 h-full">
             {/* Column Selection & Contact Count - Only visible in initial step */}
             {currentStep === "select-type" && (
               <>
@@ -86,7 +97,8 @@ export const ColumnSheet = () => {
                   />
                   {isCustomColumn && selectedColumnLabel && (
                     <p className="text-xs text-muted-foreground">
-                      New column "{selectedColumnLabel}" will be created
+                      New column &quot;{selectedColumnLabel}&quot; will be
+                      created
                     </p>
                   )}
                 </div>
@@ -120,19 +132,21 @@ export const ColumnSheet = () => {
               </>
             )}
 
-            {/* Enrichment Panel - Handles Action Selection and Workflow */}
-            {/* Key forces remount on open to reset state, avoiding stale workflow state */}
-            <EnrichmentPanel
-              key={open ? "open" : "closed"}
-              contactIds={contactIds}
-              contactsToEnrich={contactsToEnrich}
+            {/* Enrichment Panel Content */}
+            <EnrichmentPanelContent
+              controller={enrichmentController}
               disabled={!hasColumn}
-              onStepChange={setCurrentStep}
-              onComplete={() => handleOpenChange(false)}
-              onCancel={() => handleOpenChange(false)}
             />
           </div>
         </ScrollArea>
+
+        {/* Enrichment Panel Footer - Action Buttons */}
+        <SidebarSheetFooter className="px-6 py-4 border-t bg-background">
+          <EnrichmentPanelFooter
+            controller={enrichmentController}
+            disabled={!hasColumn}
+          />
+        </SidebarSheetFooter>
       </SidebarSheetContent>
     </SidebarSheet>
   );

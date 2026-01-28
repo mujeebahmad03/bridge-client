@@ -1,5 +1,4 @@
 import {
-  ArrowRight,
   Briefcase,
   CheckCircle,
   Linkedin,
@@ -9,10 +8,8 @@ import {
   UserCircle,
   Wand2,
 } from "lucide-react";
-import { useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,19 +19,19 @@ import { cn } from "@/lib/utils";
 import {
   type EnrichmentPreset,
   type EnrichmentPresetValue,
-  type EnrichmentType,
 } from "@/leads/types";
 
 interface PresetSelectorProps {
   presets: EnrichmentPreset[];
   isLoading: boolean;
   selectedContactCount: number;
-  onSelect: (
-    type: EnrichmentType,
-    preset?: EnrichmentPresetValue,
-    description?: string
-  ) => void;
-  isCreating: boolean;
+  // Controlled props
+  selectedPreset: EnrichmentPresetValue | null;
+  onSelectPreset: (preset: EnrichmentPresetValue | null) => void;
+  customDescription: string;
+  onCustomDescriptionChange: (value: string) => void;
+  activeTab: "preset" | "custom";
+  onActiveTabChange: (tab: "preset" | "custom") => void;
   disabled?: boolean;
 }
 
@@ -69,31 +66,14 @@ export function PresetSelector({
   presets,
   isLoading,
   selectedContactCount,
-  onSelect,
-  isCreating,
+  selectedPreset,
+  onSelectPreset,
+  customDescription,
+  onCustomDescriptionChange,
+  activeTab,
+  onActiveTabChange,
   disabled,
 }: PresetSelectorProps) {
-  const [selectedPreset, setSelectedPreset] =
-    useState<EnrichmentPresetValue | null>(null);
-  const [customDescription, setCustomDescription] = useState("");
-  const [activeTab, setActiveTab] = useState<"preset" | "custom">("preset");
-
-  const handlePresetClick = (preset: EnrichmentPresetValue) => {
-    setSelectedPreset(preset);
-  };
-
-  const handleContinue = () => {
-    if (activeTab === "preset" && selectedPreset) {
-      onSelect("PRESET", selectedPreset);
-    } else if (activeTab === "custom" && customDescription.trim()) {
-      onSelect("CUSTOM", undefined, customDescription);
-    }
-  };
-
-  const canContinue =
-    (activeTab === "preset" && selectedPreset) ??
-    (activeTab === "custom" && customDescription.trim().length > 10);
-
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -117,7 +97,7 @@ export function PresetSelector({
 
       <Tabs
         value={activeTab}
-        onValueChange={(v) => setActiveTab(v as "preset" | "custom")}
+        onValueChange={(v) => onActiveTabChange(v as "preset" | "custom")}
       >
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="preset" className="gap-2">
@@ -135,12 +115,14 @@ export function PresetSelector({
             {presets.map((preset) => (
               <button
                 key={preset.value}
-                onClick={() => handlePresetClick(preset.value)}
+                onClick={() => onSelectPreset(preset.value)}
+                disabled={disabled}
                 className={cn(
                   "flex items-start gap-3 p-4 rounded-lg border transition-all text-left",
                   PRESET_COLORS[preset.value],
                   selectedPreset === preset.value &&
-                    "ring-2 ring-primary ring-offset-2"
+                    "ring-2 ring-primary ring-offset-2",
+                  disabled && "opacity-50 cursor-not-allowed"
                 )}
               >
                 <div className="shrink-0 mt-0.5">
@@ -171,7 +153,8 @@ export function PresetSelector({
             <Textarea
               placeholder="e.g., Find their LinkedIn profile, validate their email address, and get their current job title and company..."
               value={customDescription}
-              onChange={(e) => setCustomDescription(e.target.value)}
+              onChange={(e) => onCustomDescriptionChange(e.target.value)}
+              disabled={disabled}
               className="min-h-[100px] resize-none"
             />
             <div className="flex justify-end mt-2">
@@ -182,26 +165,6 @@ export function PresetSelector({
           </div>
         </TabsContent>
       </Tabs>
-
-      <div className="flex justify-end pt-2">
-        <Button
-          onClick={handleContinue}
-          disabled={!canContinue || isCreating || disabled}
-          className="gap-2"
-        >
-          {isCreating ? (
-            <>
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-              Creating Preview...
-            </>
-          ) : (
-            <>
-              Preview Enrichment
-              <ArrowRight className="h-4 w-4" />
-            </>
-          )}
-        </Button>
-      </div>
     </div>
   );
 }

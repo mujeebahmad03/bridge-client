@@ -1,8 +1,6 @@
-import { CheckCircle2, Download, ExternalLink, Sparkles } from "lucide-react";
+import { CheckCircle2, ExternalLink, Sparkles } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -13,7 +11,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-import { type EnrichmentResultsResponse } from "@/leads/types";
+import type { EnrichmentResultsResponse } from "@/leads/types";
+import {
+  EXCLUDED_FIELDS,
+  formatFieldName,
+  getFieldValue,
+  isUrl,
+} from "@/leads/utils";
 
 interface EnrichmentResultsProps {
   results: EnrichmentResultsResponse | null;
@@ -26,8 +30,6 @@ interface EnrichmentResultsProps {
 export function EnrichmentResults({
   results,
   isLoading,
-  onApply,
-  isApplying,
   isApplied,
 }: EnrichmentResultsProps) {
   if (isLoading || !results) {
@@ -37,148 +39,180 @@ export function EnrichmentResults({
           <Skeleton className="h-6 w-24" />
           <Skeleton className="h-6 w-32" />
         </div>
-        <Skeleton className="h-[300px] w-full" />
+        <div className="grid grid-cols-2 gap-3">
+          <Skeleton className="h-20" />
+          <Skeleton className="h-20" />
+        </div>
+        <Skeleton className="h-[200px] w-full" />
+        <div className="flex justify-end gap-3">
+          <Skeleton className="h-10 w-32" />
+          <Skeleton className="h-10 w-40" />
+        </div>
       </div>
     );
   }
 
-  // Get all unique enriched fields from the results
+  const { parsed_results, contacts, summary } = results;
+
+  // Get all unique enriched fields (excluding internal fields)
   const enrichedFields = new Set<string>();
-  Object.values(results.result_data.records).forEach((record) => {
-    Object.keys(record).forEach((key) => enrichedFields.add(key));
+  Object.values(parsed_results).forEach((record) => {
+    Object.keys(record).forEach((key) => {
+      if (!EXCLUDED_FIELDS.has(key)) {
+        enrichedFields.add(key);
+      }
+    });
   });
   const fieldsList = Array.from(enrichedFields);
 
-  // Count how many contacts got each field
-  const fieldCounts = fieldsList.map((field) => ({
-    field,
-    count: Object.values(results.result_data.records).filter((r) => r[field])
-      .length,
-    total: results.contacts.length,
-  }));
+  // Count how many contacts got each field with non-empty values
+  const fieldCounts = fieldsList.map((field) => {
+    const count = Object.values(parsed_results).filter((record) => {
+      const value = getFieldValue(record[field]);
+
+      return value && value.trim() !== "";
+    }).length;
+
+    return { field, count, total: contacts.length };
+  });
+
+  // Filter to only show fields that have at least one result
+  const fieldsWithData = fieldCounts.filter((f) => f.count > 0);
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
+    <>
+      <div className="flex flex-col gap-5">
+        {/* Header Badges */}
+        <div className="flex flex-wrap items-center gap-2">
           <Badge className="bg-green-500/10 text-green-600 border-green-500/20 font-normal">
             <Sparkles className="h-3 w-3 mr-1" />
             Results Ready
           </Badge>
           <Badge variant="secondary" className="font-normal">
-            {results.contacts.length} contact
-            {results.contacts.length !== 1 ? "s" : ""} enriched
+            {contacts.length} contact{contacts.length !== 1 ? "s" : ""} enriched
           </Badge>
+          {summary && (
+            <Badge variant="outline" className="font-normal">
+              {summary.total_fields} fields found
+            </Badge>
+          )}
+          {isApplied && (
+            <Badge className="bg-green-500/10 text-green-600 border-green-500/20 ml-auto">
+              <CheckCircle2 className="h-3 w-3 mr-1" />
+              Applied
+            </Badge>
+          )}
         </div>
-        {isApplied && (
-          <Badge className="bg-green-500/10 text-green-600 border-green-500/20">
-            <CheckCircle2 className="h-3 w-3 mr-1" />
-            Applied
-          </Badge>
-        )}
-      </div>
 
-      {/* Stats Summary */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {fieldCounts.map(({ field, count, total }) => (
-          <div
-            key={field}
-            className="rounded-lg border bg-card p-3 text-center"
-          >
-            <div className="text-2xl font-bold text-primary">{count}</div>
-            <div className="text-xs text-muted-foreground">
-              {field.replace(/_/g, " ")}
-            </div>
-            <div className="text-xs text-muted-foreground mt-1">
-              {Math.round((count / total) * 100)}% success
-            </div>
+        {/* Stats Summary */}
+        {fieldsWithData.length > 0 && (
+          <div className="grid grid-cols-4 gap-3">
+            {fieldsWithData.slice(0, 4).map(({ field, count, total }) => (
+              <div
+                key={field}
+                className="rounded-lg border bg-card p-3 text-center"
+              >
+                <div className="text-2xl font-bold text-primary">{count}</div>
+                <div className="text-xs text-muted-foreground truncate">
+                  {formatFieldName(field)}
+                </div>
+                <div className="text-xs text-muted-foreground mt-0.5">
+                  {Math.round((count / total) * 100)}% success
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-
-      {/* Results Table */}
-      <div className="rounded-lg border bg-card">
-        <ScrollArea className="max-h-[300px]">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[150px] sticky left-0 bg-card">
-                  Name
-                </TableHead>
-                {fieldsList.map((field) => (
-                  <TableHead key={field} className="min-w-[150px]">
-                    {field.replace(/_/g, " ")}
-                  </TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {results.contacts.map((contact) => {
-                const enrichedData =
-                  results.result_data.records[contact.id] || {};
-                return (
-                  <TableRow key={contact.id}>
-                    <TableCell className="font-medium sticky left-0 bg-card">
-                      {contact.first_name} {contact.last_name}
-                    </TableCell>
-                    {fieldsList.map((field) => {
-                      const value = enrichedData[field];
-                      const isUrl = value?.startsWith("http");
-                      return (
-                        <TableCell key={field}>
-                          {value ? (
-                            isUrl ? (
-                              <a
-                                href={value}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-1 text-primary hover:underline"
-                              >
-                                <ExternalLink className="h-3 w-3" />
-                                <span className="truncate max-w-[150px]">
-                                  {value.replace(/^https?:\/\/(www\.)?/, "")}
-                                </span>
-                              </a>
-                            ) : (
-                              <span className="text-foreground">{value}</span>
-                            )
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
-                        </TableCell>
-                      );
-                    })}
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </ScrollArea>
-      </div>
-
-      {/* Actions */}
-      <div className="flex items-center justify-end gap-3 pt-2">
-        <Button variant="outline" className="gap-2">
-          <Download className="h-4 w-4" />
-          Export Results
-        </Button>
-        {!isApplied && (
-          <Button onClick={onApply} disabled={isApplying} className="gap-2">
-            {isApplying ? (
-              <>
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                Applying...
-              </>
-            ) : (
-              <>
-                <CheckCircle2 className="h-4 w-4" />
-                Apply to Contacts
-              </>
-            )}
-          </Button>
         )}
+
+        {/* Results Table with constrained height */}
+        <div className="rounded-lg border bg-card overflow-hidden">
+          <div className="overflow-auto max-h-[240px]">
+            <Table>
+              <TableHeader className="sticky top-0 bg-card z-10">
+                <TableRow>
+                  <TableHead className="w-[140px] bg-card">Name</TableHead>
+                  {fieldsList.map((field) => (
+                    <TableHead key={field} className="min-w-[140px] bg-card">
+                      {formatFieldName(field)}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {contacts.map((contact) => {
+                  const enrichedData = parsed_results[contact.id] || {};
+                  return (
+                    <TableRow key={contact.id}>
+                      <TableCell className="font-medium">
+                        <span className="truncate block max-w-[130px]">
+                          {contact.first_name} {contact.last_name}
+                        </span>
+                      </TableCell>
+                      {fieldsList.map((field) => {
+                        const value = getFieldValue(enrichedData[field]);
+                        return (
+                          <TableCell key={field}>
+                            <CellValue value={value} />
+                          </TableCell>
+                        );
+                      })}
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
       </div>
-    </div>
+    </>
+  );
+}
+
+// Extracted cell value component for cleaner rendering
+function CellValue({ value }: { value: string }) {
+  if (!value) {
+    return <span className="text-muted-foreground">—</span>;
+  }
+
+  if (isUrl(value)) {
+    return (
+      <a
+        href={value}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-1 text-primary hover:underline max-w-[140px]"
+      >
+        <ExternalLink className="h-3 w-3 shrink-0" />
+        <span className="truncate">
+          {value.replace(/^https?:\/\/(www\.)?/, "")}
+        </span>
+      </a>
+    );
+  }
+
+  // Handle boolean-like values
+  if (value.toLowerCase() === "true") {
+    return (
+      <Badge
+        variant="secondary"
+        className="bg-green-500/10 text-green-600 border-green-500/20"
+      >
+        Yes
+      </Badge>
+    );
+  }
+
+  if (value.toLowerCase() === "false") {
+    return (
+      <Badge variant="secondary" className="bg-muted text-muted-foreground">
+        No
+      </Badge>
+    );
+  }
+
+  return (
+    <span className="text-foreground truncate block max-w-[140px]">
+      {value}
+    </span>
   );
 }

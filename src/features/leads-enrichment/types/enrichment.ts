@@ -90,21 +90,45 @@ export interface EnrichmentStatusResponse {
   error_message?: string;
 }
 
+// @/leads/types/enrichment.ts
+
+export interface EnrichmentFieldResult {
+  value: string;
+  validator_type: string;
+  metadata: {
+    source: string;
+    original_field_name: string;
+    alias: string;
+    type: string;
+    status: string;
+    enrichment_timestamp: string | null;
+  };
+  status: string;
+}
+
 export interface EnrichmentResultContact {
   id: string;
   first_name: string;
   last_name: string;
   email_address: string;
-  [key: string]: string | undefined;
+  primary_phone_number: string | null;
+  linkedin_profile: string | null;
+}
+
+export interface EnrichmentResultsSummary {
+  total_contacts: number;
+  total_fields: number;
+  fields_by_type: Record<string, number>;
 }
 
 export interface EnrichmentResultsResponse {
   id: string;
   status: EnrichmentStatus;
-  result_data: {
-    records: Record<string, Record<string, string>>;
-  };
+  parsed_results: Record<string, Record<string, EnrichmentFieldResult>>;
   contacts: EnrichmentResultContact[];
+  is_contact_list: boolean;
+  summary: EnrichmentResultsSummary;
+  error_message: string;
 }
 
 export interface EnrichmentApplyResponse {

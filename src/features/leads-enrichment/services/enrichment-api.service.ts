@@ -7,10 +7,14 @@ import type {
   CreatePreviewRequest,
   EnrichmentApplyResponse,
   EnrichmentApproveResponse,
+  EnrichmentFieldResult,
   EnrichmentListResponse,
   EnrichmentPreset,
   EnrichmentPreviewResponse,
+  EnrichmentResultContact,
   EnrichmentResultsResponse,
+  EnrichmentResultsSummary,
+  EnrichmentStatus,
   EnrichmentStatusResponse,
 } from "@/leads/types";
 
@@ -261,23 +265,56 @@ class EnrichmentApiService {
         "Failed to get enrichment results"
       );
       const data = raw as Record<string, unknown>;
+
+      // Parse parsed_results with proper typing
+      let parsedResults: Record<
+        string,
+        Record<string, EnrichmentFieldResult>
+      > = {};
+
+      if (data.parsed_results && typeof data.parsed_results === "object") {
+        parsedResults = data.parsed_results as Record<
+          string,
+          Record<string, EnrichmentFieldResult>
+        >;
+      }
+
+      // Parse contacts array
+      const contacts: EnrichmentResultContact[] = Array.isArray(data.contacts)
+        ? data.contacts.map((contact: unknown) => {
+            const c = contact as Record<string, unknown>;
+            return {
+              id: String(c.id ?? ""),
+              first_name: String(c.first_name ?? ""),
+              last_name: String(c.last_name ?? ""),
+              email_address: String(c.email_address ?? ""),
+              primary_phone_number: c.primary_phone_number
+                ? String(c.primary_phone_number)
+                : null,
+              linkedin_profile: c.linkedin_profile
+                ? String(c.linkedin_profile)
+                : null,
+            };
+          })
+        : [];
+
+      // Parse summary
+      const summaryData = data.summary as Record<string, unknown> | undefined;
+      const summary: EnrichmentResultsSummary = {
+        total_contacts: Number(summaryData?.total_contacts ?? contacts.length),
+        total_fields: Number(summaryData?.total_fields ?? 0),
+        fields_by_type:
+          (summaryData?.fields_by_type as Record<string, number>) ?? {},
+      };
+
       return {
         id: String(data.id ?? enrichmentRequestId),
-        status: String(
-          data.status ?? "RESULTS_READY"
-        ) as EnrichmentResultsResponse["status"],
-        result_data: {
-          records:
-            data.result_data && typeof data.result_data === "object"
-              ? (((data.result_data as { records?: unknown }).records as Record<
-                  string,
-                  Record<string, string>
-                >) ?? {})
-              : {},
-        },
-        contacts: Array.isArray(data.contacts)
-          ? (data.contacts as EnrichmentResultsResponse["contacts"])
-          : [],
+        status: String(data.status ?? "RESULTS_READY") as EnrichmentStatus,
+        parsed_results: parsedResults,
+        contacts,
+        is_contact_list: Boolean(data.is_contact_list ?? false),
+        summary,
+        error_message: String(data.error_message ?? ""),
       };
     } catch (e) {
       this.handleApiError(e, "Failed to get enrichment results");
