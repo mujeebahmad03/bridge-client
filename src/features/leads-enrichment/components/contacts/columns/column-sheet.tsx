@@ -1,7 +1,6 @@
 "use client";
 
 import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
@@ -74,7 +73,7 @@ export const ColumnSheet = () => {
           <SidebarSheetDescription>{getDescription()}</SidebarSheetDescription>
         </SidebarSheetHeader>
 
-        <ScrollArea className="flex-1 min-h-0">
+        <div className="overflow-y-auto h-full">
           <div className="px-6 py-4 space-y-6">
             {/* Column Selection & Contact Count - Only visible in initial step */}
             {currentStep === "select-type" && (
@@ -140,7 +139,7 @@ export const ColumnSheet = () => {
               disabled={!hasColumn}
             />
           </div>
-        </ScrollArea>
+        </div>
 
         {/* Enrichment Panel Footer - Action Buttons */}
         <SidebarSheetFooter className="px-6 py-4 border-t bg-background">
