@@ -10,6 +10,7 @@ import {
   approveEnrichment,
   checkEnrichmentStatus,
   createEnrichmentPreview,
+  fetchEnrichmentHistory,
   fetchEnrichmentPresets,
   getEnrichmentResults,
 } from "@/leads/services";
@@ -26,7 +27,8 @@ import type {
 export const enrichmentKeys = {
   all: ["enrichment"] as const,
   presets: () => [...enrichmentKeys.all, "presets"] as const,
-  history: (page: number) => [...enrichmentKeys.all, "history", page] as const,
+  history: (page?: number, pageSize?: number) =>
+    [...enrichmentKeys.all, "history", page, pageSize] as const,
   status: (id: string) => [...enrichmentKeys.all, "status", id] as const,
   results: (id: string) => [...enrichmentKeys.all, "results", id] as const,
 };
@@ -313,4 +315,19 @@ export const useEnrichmentWorkflow = ({
     applyResults,
     reset,
   };
+};
+
+interface UseEnrichmentHistoryOptions {
+  page?: number;
+  pageSize?: number;
+}
+
+export const useEnrichmentHistory = ({
+  page,
+  pageSize,
+}: UseEnrichmentHistoryOptions) => {
+  return useQuery({
+    queryKey: enrichmentKeys.history(page, pageSize),
+    queryFn: () => fetchEnrichmentHistory(page, pageSize),
+  });
 };

@@ -11,6 +11,7 @@ const baseDashboardRoute = "/dashboard";
 export const DASHBOARD_ROUTES = {
   OVERVIEW: baseDashboardRoute,
   LEADS_ENRICHMENT: `${baseDashboardRoute}/leads-enrichment`,
+  LEADS_ENRICHMENT_CONTACT: `${baseDashboardRoute}/leads-enrichment/contacts`,
   CAMPAIGN: `${baseDashboardRoute}/campaign`,
   CHANNELS: "#",
   EMAILS: `${baseDashboardRoute}/channels/email`,

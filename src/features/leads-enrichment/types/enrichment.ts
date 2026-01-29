@@ -17,14 +17,17 @@ export type EnrichmentType = "PRESET" | "CUSTOM";
 
 export interface EnrichmentHistoryItem {
   id: string;
-  name: string;
-  source: string;
-  template: string;
+  enrichmentType: EnrichmentType;
+  presetAction: EnrichmentPresetValue | null;
+  enrichmentDescription: string;
   status: EnrichmentStatus;
-  totalRecords: number;
-  enrichedRecords: number;
-  createdAt: Date;
-  completedAt: Date | null;
+  pipe0JobId: string;
+  contactCount: number;
+  isContactList: boolean;
+  contactListId: string | null;
+  errorMessage: string;
+  createdAt: string; // ISO string from API
+  lastModifiedAt: string; // ISO string from API
 }
 
 export type EnrichmentStatus =
@@ -134,20 +137,11 @@ export interface EnrichmentApplyResponse {
   message: string;
 }
 
-export interface EnrichmentListItem {
-  id: string;
-  enrichment_type: EnrichmentType;
-  preset_action: EnrichmentPresetValue | null;
-  status: EnrichmentStatus;
-  contact_count: number;
-  created_at: string;
-}
-
 export interface EnrichmentListResponse {
   count: number;
   next: string | null;
   previous: string | null;
-  results: EnrichmentListItem[];
+  results: EnrichmentHistoryItem[];
 }
 
 // Workflow step type

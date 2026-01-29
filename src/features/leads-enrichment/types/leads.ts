@@ -123,6 +123,7 @@ export interface UploadHistoryItem {
   file: string;
   processed_at: string | null;
   created_at: string;
+  import_tag?: string | null;
 }
 
 // ==================== File Validation ====================

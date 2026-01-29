@@ -16,6 +16,7 @@ import type {
   EnrichmentResultsSummary,
   EnrichmentStatus,
   EnrichmentStatusResponse,
+  EnrichmentType,
 } from "@/leads/types";
 
 // ==================== API wrapper (unwrap response, handle errors) ====================
@@ -73,6 +74,56 @@ class EnrichmentApiService {
       return this.validateResponse(payload, defaultErrorMessage);
     }
     return payload as T;
+  }
+
+  private normalizeEnrichmentHistoryItem(
+    item: unknown
+  ): EnrichmentListResponse["results"][number] | null {
+    if (!item || typeof item !== "object") {
+      return null;
+    }
+    const o = item as Record<string, unknown>;
+
+    const id = o.id ? String(o.id) : "";
+    if (!id) {
+      return null;
+    }
+
+    type HistoryItem = EnrichmentListResponse["results"][number];
+
+    const presetActionRaw = o.preset_action ?? o.presetAction;
+    const presetAction = presetActionRaw
+      ? (String(presetActionRaw) as HistoryItem["presetAction"])
+      : null;
+
+    const contactListIdRaw = o.contact_list_id ?? o.contactListId;
+    const contactListId =
+      contactListIdRaw === null || typeof contactListIdRaw === "undefined"
+        ? null
+        : String(contactListIdRaw);
+
+    return {
+      id,
+      enrichmentType: String(
+        o.enrichment_type ?? o.enrichmentType ?? "PRESET"
+      ) as EnrichmentType,
+      presetAction,
+      enrichmentDescription: String(
+        o.enrichment_description ?? o.enrichmentDescription ?? ""
+      ),
+      status: String(o.status ?? "PREVIEW") as EnrichmentStatus,
+      pipe0JobId: String(o.pipe0_job_id ?? o.pipe0JobId ?? ""),
+      contactCount: Number(o.contact_count ?? o.contactCount ?? 0),
+      isContactList: Boolean(o.is_contact_list ?? o.isContactList ?? false),
+      contactListId,
+      errorMessage: String(o.error_message ?? o.errorMessage ?? ""),
+      createdAt: String(
+        o.created_at ?? o.createdAt ?? new Date().toISOString()
+      ),
+      lastModifiedAt: String(
+        o.last_modified_at ?? o.lastModifiedAt ?? new Date().toISOString()
+      ),
+    };
   }
 
   async fetchEnrichmentPresets(): Promise<EnrichmentPreset[]> {
@@ -361,14 +412,38 @@ class EnrichmentApiService {
         response,
         "Failed to fetch enrichment history"
       );
-      const data = raw as Record<string, unknown>;
+
+      // New API shape: { success: true, data: [...] , status: { ... } }
+      // unwrapResponse() will often return just `data` (the array), but keep this robust.
+      const o =
+        raw && typeof raw === "object"
+          ? (raw as Record<string, unknown>)
+          : null;
+
+      let itemsRaw: unknown[] = [];
+      if (Array.isArray(raw)) {
+        itemsRaw = raw;
+      } else if (Array.isArray(o?.data)) {
+        itemsRaw = o.data as unknown[];
+      } else if (Array.isArray(o?.results)) {
+        itemsRaw = o.results as unknown[];
+      }
+
+      const results = itemsRaw
+        .map((it) => this.normalizeEnrichmentHistoryItem(it))
+        .filter(Boolean) as EnrichmentListResponse["results"];
+
+      const count =
+        !Array.isArray(raw) && typeof o?.count !== "undefined"
+          ? Number(o.count ?? 0)
+          : results.length;
+
       return {
-        count: Number(data.count ?? 0),
-        next: data.next ? String(data.next) : null,
-        previous: data.previous ? String(data.previous) : null,
-        results: Array.isArray(data.results)
-          ? (data.results as EnrichmentListResponse["results"])
-          : [],
+        count,
+        next: !Array.isArray(raw) && o?.next ? String(o.next) : null,
+        previous:
+          !Array.isArray(raw) && o?.previous ? String(o.previous) : null,
+        results,
       };
     } catch (e) {
       this.handleApiError(e, "Failed to fetch enrichment history");

@@ -37,6 +37,7 @@ import {
   DataTableToolbar,
   type FacetedFilterConfig,
 } from "./data-table-toolbar";
+import { DataTableSkeleton } from "./loading-state";
 
 // ==================== Types ====================
 export interface DataTableProps<TData> {
@@ -243,17 +244,7 @@ export function NewDataTable<TData>({
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow>
-                <TableCell
-                  colSpan={tableColumns.length}
-                  className="h-24 text-center"
-                >
-                  <div className="flex items-center justify-center gap-2">
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                    <span className="text-muted-foreground">Loading...</span>
-                  </div>
-                </TableCell>
-              </TableRow>
+              <DataTableSkeleton columns={tableColumns.length} rows={10} />
             ) : table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow
