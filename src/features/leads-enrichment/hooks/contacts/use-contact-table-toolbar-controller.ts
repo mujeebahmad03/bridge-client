@@ -1,4 +1,7 @@
+"use client";
+
 import { useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
 import { useCallback } from "react";
 import { toast } from "sonner";
 
@@ -13,6 +16,9 @@ import type { Contact } from "@/leads/types";
 
 export function useContactTableToolbarController() {
   const queryClient = useQueryClient();
+  const searchParams = useSearchParams();
+  const tag = searchParams.get("tag") ?? undefined;
+
   const { data: columns = [] } = useContactColumnsQuery();
 
   // Store selectors
@@ -45,6 +51,7 @@ export function useContactTableToolbarController() {
       queryClient.getQueryData<Contact[]>(
         contactsKeys.list({
           search: useContactsTableStore.getState().searchValue,
+          tag,
         })
       ) ?? [];
     const exportContacts = contacts.filter((c) => ids.includes(c.id));
@@ -70,7 +77,7 @@ export function useContactTableToolbarController() {
     URL.revokeObjectURL(url);
 
     toast.success(`Exported ${ids.length} contact(s)`);
-  }, [queryClient, columns, visibleColumnIds]);
+  }, [queryClient, columns, visibleColumnIds, tag]);
 
   return {
     // Data

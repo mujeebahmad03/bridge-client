@@ -1,6 +1,7 @@
 "use client";
 
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 
 import {
@@ -15,6 +16,9 @@ import type { Contact, ContactColumn } from "@/leads/types";
 const ROW_HEIGHT = 20;
 
 export function useContactTableController() {
+  const searchParams = useSearchParams();
+  const tag = searchParams.get("tag") ?? undefined;
+
   // Store selectors
   const searchValue = useContactsTableStore((s) => s.searchValue);
   const visibleColumnIds = useContactsTableStore((s) => s.visibleColumnIds);
@@ -41,7 +45,7 @@ export function useContactTableController() {
     data: contacts = [],
     isLoading: isLoadingContacts,
     isFetching: isFetchingContacts,
-  } = useContactsQuery({ search: searchValue });
+  } = useContactsQuery({ search: searchValue, tag });
   const { data: columns = [] } = useContactColumnsQuery();
 
   // Sort contacts based on sortColumn and sortDirection

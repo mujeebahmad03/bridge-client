@@ -1,4 +1,10 @@
-import { ContactNavbar, ContactTable } from "@/leads/components/contacts";
+import { Suspense } from "react";
+
+import {
+  ContactNavbar,
+  ContactTable,
+  ContactTableLoadingBody,
+} from "@/leads/components/contacts";
 
 export const ContactEnrichmentPage = () => {
   return (
@@ -13,7 +19,9 @@ export const ContactEnrichmentPage = () => {
           </p>
         </div>
 
-        <ContactTable />
+        <Suspense fallback={<ContactTableLoadingBody dataColumnsCount={10} />}>
+          <ContactTable />
+        </Suspense>
       </div>
     </div>
   );

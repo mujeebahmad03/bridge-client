@@ -1,5 +1,6 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -11,6 +12,9 @@ import {
 import { useContactsTableStore } from "@/leads/stores";
 
 export function useColumnSheetController() {
+  const searchParams = useSearchParams();
+  const tag = searchParams.get("tag") ?? undefined;
+
   // Store selectors
   const open = useContactsTableStore((s) => s.isColumnSheetOpen);
   const mode = useContactsTableStore((s) => s.columnSheetMode);
@@ -21,7 +25,10 @@ export function useColumnSheetController() {
   const searchValue = useContactsTableStore((s) => s.searchValue);
 
   // React Query hooks
-  const { data: contacts = [] } = useContactsQuery({ search: searchValue });
+  const { data: contacts = [] } = useContactsQuery({
+    search: searchValue,
+    tag,
+  });
   const { data: columns = [], isLoading: columnsLoading } =
     useContactColumnsQuery();
   const createColumnMutation = useCreateContactColumnMutation();

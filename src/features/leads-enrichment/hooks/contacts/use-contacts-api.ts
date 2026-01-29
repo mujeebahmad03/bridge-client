@@ -69,12 +69,12 @@ function applyOptimisticFieldUpdate(
 
 export const contactsKeys = {
   all: ["contacts"] as const,
-  list: (params: { search?: string }) =>
+  list: (params: { search?: string; tag?: string }) =>
     [...contactsKeys.all, "list", params] as const,
   columns: () => [...contactsKeys.all, "columns"] as const,
 };
 
-export function useContactsQuery(params: { search?: string }) {
+export function useContactsQuery(params: { search?: string; tag?: string }) {
   return useQuery({
     queryKey: contactsKeys.list(params),
     queryFn: () => fetchContacts(params),

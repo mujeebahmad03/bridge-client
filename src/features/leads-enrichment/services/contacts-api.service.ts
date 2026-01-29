@@ -141,7 +141,10 @@ class ContactsApiService {
     return payload as T;
   }
 
-  async fetchContacts(params?: { search?: string }): Promise<Contact[]> {
+  async fetchContacts(params?: {
+    search?: string;
+    tag?: string;
+  }): Promise<Contact[]> {
     const result = await this.fetchContactsWithCustomFields(params);
     return result.contacts;
   }
@@ -151,7 +154,10 @@ class ContactsApiService {
    * Note: Custom fields from datatable may be incomplete. Use fetchAllCustomFields
    * for a complete list of custom fields.
    */
-  async fetchContactsWithCustomFields(params?: { search?: string }): Promise<{
+  async fetchContactsWithCustomFields(params?: {
+    search?: string;
+    tag?: string;
+  }): Promise<{
     contacts: Contact[];
     customFields: CustomField[];
   }> {
@@ -159,6 +165,9 @@ class ContactsApiService {
       const queryParams: Record<string, string | number> = {};
       if (params?.search?.trim()) {
         queryParams.search = params.search.trim();
+      }
+      if (params?.tag?.trim()) {
+        queryParams.tag = params.tag.trim();
       }
       queryParams.page_size = 10_000;
 
@@ -507,12 +516,14 @@ export async function createCustomContactColumn(payload: {
  */
 export async function fetchContactsWithCustomFields(params?: {
   search?: string;
+  tag?: string;
 }): Promise<{ contacts: Contact[]; customFields: CustomField[] }> {
   return contactsApiService.fetchContactsWithCustomFields(params);
 }
 
 export async function fetchContacts(params?: {
   search?: string;
+  tag?: string;
 }): Promise<Contact[]> {
   return contactsApiService.fetchContacts(params);
 }
