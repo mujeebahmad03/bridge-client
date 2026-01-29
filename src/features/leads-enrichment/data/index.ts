@@ -1,8 +1,4 @@
-import type {
-  EnrichmentHistoryItem,
-  ImportSource,
-  WorkflowTemplate,
-} from "@/leads/types";
+import type { ImportSource, WorkflowTemplate } from "@/leads/types";
 
 export const importSources: ImportSource[] = [
   {
@@ -79,63 +75,5 @@ export const workflowTemplates: WorkflowTemplate[] = [
     category: "email",
     estimatedTime: "~5 min",
     popularity: "high",
-  },
-];
-
-export const enrichmentHistory: EnrichmentHistoryItem[] = [
-  {
-    id: "1",
-    name: "Q4 Prospects List",
-    source: "CSV Upload",
-    template: "Find Work Email",
-    status: "SUCCESSFUL",
-    totalRecords: 1250,
-    enrichedRecords: 1180,
-    createdAt: new Date("2024-01-15T10:30:00"),
-    completedAt: new Date("2024-01-15T10:45:00"),
-  },
-  {
-    id: "2",
-    name: "HubSpot Contacts Sync",
-    source: "HubSpot",
-    template: "Verify Email",
-    status: "IN_PROGRESS",
-    totalRecords: 500,
-    enrichedRecords: 234,
-    createdAt: new Date("2024-01-16T14:00:00"),
-    completedAt: null,
-  },
-  {
-    id: "3",
-    name: "Enterprise Leads",
-    source: "CSV Upload",
-    template: "Full Profile Enrichment",
-    status: "SUCCESSFUL",
-    totalRecords: 320,
-    enrichedRecords: 298,
-    createdAt: new Date("2024-01-14T09:15:00"),
-    completedAt: new Date("2024-01-14T09:35:00"),
-  },
-  {
-    id: "4",
-    name: "Event Attendees",
-    source: "CSV Upload",
-    template: "Find Phone Number",
-    status: "FAILED",
-    totalRecords: 150,
-    enrichedRecords: 0,
-    createdAt: new Date("2024-01-13T16:45:00"),
-    completedAt: null,
-  },
-  {
-    id: "5",
-    name: "Partner Network",
-    source: "HubSpot",
-    template: "Company Enrichment",
-    status: "IN_PROGRESS",
-    totalRecords: 75,
-    enrichedRecords: 0,
-    createdAt: new Date("2024-01-17T08:00:00"),
-    completedAt: null,
   },
 ];
