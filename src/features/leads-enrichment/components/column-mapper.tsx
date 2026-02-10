@@ -10,14 +10,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+import { EnrichmentPreview } from "./enrichment-preview";
 import { FieldSelector } from "./field-selector";
-import { MappingPreview } from "./mapping-preview";
 import { useColumnMapper } from "@/leads/hooks/use-column-mapper";
 
 export function ColumnMapper() {
   const {
     sourceFields,
-    preview,
     allTargetFields,
     usedTargetFieldIds,
     isLoadingCustomFields,
@@ -62,7 +61,7 @@ export function ColumnMapper() {
         </Table>
       </div>
 
-      <MappingPreview sourceFields={sourceFields} preview={preview} />
+      <EnrichmentPreview />
     </div>
   );
 }

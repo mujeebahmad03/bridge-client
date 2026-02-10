@@ -1,10 +1,36 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
 import { toast } from "sonner";
 
-import { useUploadFile } from "./use-upload-history";
+import { UPLOAD_HISTORY_QUERY_KEY, useUploadFile } from "./use-upload-history";
+import { fetchUploadHistory } from "@/leads/services";
 import { useFileUploadStore } from "@/leads/stores";
-import type { FeatureMapping } from "@/leads/types";
+import type { FeatureMapping, UploadStatus } from "@/leads/types";
 import { parseCSVFile, validateFileType } from "@/leads/utils";
+
+const POLL_INTERVAL_MS = 2500;
+const POLL_MAX_ATTEMPTS = 60; // ~2.5 minutes
+
+async function pollUntilComplete(
+  uploadId: string
+): Promise<{ status: UploadStatus; import_tag: string | null }> {
+  for (let attempt = 0; attempt < POLL_MAX_ATTEMPTS; attempt++) {
+    const { results } = await fetchUploadHistory({
+      page: 1,
+      pageSize: 100,
+    });
+    const item = results.find((r) => r.id === uploadId);
+    if (!item) {
+      await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
+      continue;
+    }
+    if (item.status === "SUCCESS" || item.status === "FAILED") {
+      return { status: item.status, import_tag: item.import_tag ?? null };
+    }
+    await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
+  }
+  return { status: "FAILED", import_tag: null };
+}
 
 export function useFileUpload() {
   const {
@@ -19,6 +45,7 @@ export function useFileUpload() {
     closeDialog,
   } = useFileUploadStore();
 
+  const queryClient = useQueryClient();
   const uploadMutation = useUploadFile();
 
   const processFile = useCallback(
@@ -67,7 +94,7 @@ export function useFileUpload() {
   );
 
   const handleEnrich = useCallback(
-    async (onSuccess?: () => void) => {
+    async (onSuccess?: (importTag: string) => void) => {
       if (!file || !validation || mappings.length === 0) {
         return;
       }
@@ -80,22 +107,45 @@ export function useFileUpload() {
           featureMapping[mapping.sourceField] = mapping.targetFieldId;
         });
 
-        await uploadMutation.mutateAsync({
+        const upload = await uploadMutation.mutateAsync({
           feature_mapping: JSON.stringify(featureMapping),
           source: "FILE_UPLOAD",
           filename: file.name,
           file,
         });
 
-        closeDialog();
-        onSuccess?.();
+        if (upload.status === "SUCCESS" && upload.import_tag) {
+          closeDialog();
+          onSuccess?.(upload.import_tag);
+          return;
+        }
+
+        const { status, import_tag } = await pollUntilComplete(upload.id);
+
+        if (status === "SUCCESS" && import_tag) {
+          queryClient.invalidateQueries({ queryKey: UPLOAD_HISTORY_QUERY_KEY });
+          closeDialog();
+          onSuccess?.(import_tag);
+        } else if (status === "FAILED") {
+          toast.error(
+            "Import failed. Please try again or check the upload history."
+          );
+        }
       } catch {
         // Error is handled by the mutation
       } finally {
         setIsSubmitting(false);
       }
     },
-    [file, validation, mappings, uploadMutation, closeDialog, setIsSubmitting]
+    [
+      file,
+      validation,
+      mappings,
+      uploadMutation,
+      queryClient,
+      closeDialog,
+      setIsSubmitting,
+    ]
   );
 
   return {

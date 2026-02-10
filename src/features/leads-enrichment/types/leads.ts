@@ -147,7 +147,7 @@ export interface ColumnMappingState {
 }
 
 // ==================== Upload Dialog State ====================
-export type UploadStep = "upload" | "mapping" | "preview";
+export type UploadStep = "upload" | "mapping";
 
 export interface UploadDialogState {
   step: UploadStep;

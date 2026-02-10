@@ -92,7 +92,7 @@ export function EnrichmentPreview() {
             <TableBody>
               {getMappedData.slice(0, 5).map((row, rowIndex) => (
                 <TableRow
-                  key={row.id}
+                  key={rowIndex}
                   className="hover:bg-muted/30 transition-colors"
                 >
                   <TableCell className="text-center text-muted-foreground font-mono text-xs">

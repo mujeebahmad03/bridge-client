@@ -2,11 +2,12 @@
 
 import {
   ArrowLeft,
-  ArrowRight,
   FileSpreadsheet,
   Loader2,
+  Megaphone,
   Sparkles,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -18,8 +19,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+import { DASHBOARD_ROUTES } from "@/config/app-route";
+
 import { ColumnMapper } from "./column-mapper";
-import { EnrichmentPreview } from "./enrichment-preview";
 import { FileDropZone } from "./file-drop-zone";
 import { useFileUpload } from "@/leads/hooks";
 import {
@@ -28,11 +30,8 @@ import {
   useFileUploadStore,
 } from "@/leads/stores";
 
-interface FileUploadDialogProps {
-  onSuccess?: () => void;
-}
-
-export function FileUploadDialog({ onSuccess }: FileUploadDialogProps) {
+export function FileUploadDialog() {
+  const router = useRouter();
   const { isOpen, step, validation, isDragOver, isValidating, isSubmitting } =
     useFileUploadDialogState();
 
@@ -43,6 +42,17 @@ export function FileUploadDialog({ onSuccess }: FileUploadDialogProps) {
   const activeMappings = useActiveMappings();
   const { handleDrop, handleFileSelect, handleEnrich } = useFileUpload();
 
+  const handleCreateCampaign = () => {
+    closeDialog();
+    router.push(DASHBOARD_ROUTES.CAMPAIGN);
+  };
+
+  const handleEnrichSuccess = (importTag: string) => {
+    router.push(
+      `${DASHBOARD_ROUTES.LEADS_ENRICHMENT_CONTACT}?tag=${importTag}`
+    );
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && closeDialog()}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
@@ -51,15 +61,12 @@ export function FileUploadDialog({ onSuccess }: FileUploadDialogProps) {
             <FileSpreadsheet className="h-5 w-5 text-primary" />
             {step === "upload" && "Upload Your File"}
             {step === "mapping" && "Map Your Columns"}
-            {step === "preview" && "Preview & Enrich"}
           </DialogTitle>
           <DialogDescription>
             {step === "upload" &&
               "Upload a CSV or Excel file containing your leads data"}
             {step === "mapping" &&
-              "Match your file columns to the system fields"}
-            {step === "preview" &&
-              `Review ${validation?.rowCount ?? 0} records before enrichment`}
+              "Match your file columns to the system fields and review the data below"}
           </DialogDescription>
         </DialogHeader>
 
@@ -80,15 +87,13 @@ export function FileUploadDialog({ onSuccess }: FileUploadDialogProps) {
           )}
 
           {step === "mapping" && validation && <ColumnMapper />}
-
-          {step === "preview" && validation && <EnrichmentPreview />}
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0">
+        <DialogFooter className="gap-2">
           {step !== "upload" && (
             <Button
               variant="outline"
-              onClick={() => setStep(step === "preview" ? "mapping" : "upload")}
+              onClick={() => setStep("upload")}
               disabled={isSubmitting}
               className="gap-2"
             >
@@ -102,34 +107,34 @@ export function FileUploadDialog({ onSuccess }: FileUploadDialogProps) {
           </Button>
 
           {step === "mapping" && (
-            <Button
-              onClick={() => setStep("preview")}
-              disabled={activeMappings.length === 0}
-              className="gap-2"
-            >
-              Preview Data
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-          )}
-
-          {step === "preview" && (
-            <Button
-              onClick={() => handleEnrich(onSuccess)}
-              disabled={isSubmitting}
-              className="gap-2"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Uploading...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-4 w-4" />
-                  Enrich {validation?.rowCount} Records
-                </>
-              )}
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                onClick={handleCreateCampaign}
+                disabled={isSubmitting}
+                className="gap-2"
+              >
+                <Megaphone className="h-4 w-4" />
+                Create Campaign
+              </Button>
+              <Button
+                onClick={() => handleEnrich(handleEnrichSuccess)}
+                disabled={isSubmitting || activeMappings.length === 0}
+                className="gap-2"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Setting up your contacts...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4" />
+                    Enrich {validation?.rowCount ?? 0} Records
+                  </>
+                )}
+              </Button>
+            </>
           )}
         </DialogFooter>
       </DialogContent>
