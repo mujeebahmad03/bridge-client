@@ -171,12 +171,16 @@ export function useCreateContactColumnMutation() {
     onSuccess: (newColumn) => {
       queryClient.invalidateQueries({ queryKey: contactsKeys.columns() });
       queryClient.invalidateQueries({ queryKey: CUSTOM_FIELDS_QUERY_KEY });
-      // Add new column to column order
       const store = useContactsTableStore.getState();
+      // Add new column to column order
       const currentOrder = store.columnOrder;
       if (!currentOrder.includes(newColumn.id)) {
         store.setColumnOrder([...currentOrder, newColumn.id]);
       }
+      // Make new column visible by default
+      const nextVisible = new Set(store.visibleColumnIds);
+      nextVisible.add(newColumn.id);
+      store.setVisibleColumns(Array.from(nextVisible));
     },
   });
 }

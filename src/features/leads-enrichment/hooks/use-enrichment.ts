@@ -93,7 +93,7 @@ export const useEnrichmentWorkflow = ({
       toast.success("Enrichment results applied successfully");
       queryClient.invalidateQueries({ queryKey: enrichmentKeys.status(id) });
       queryClient.invalidateQueries({ queryKey: enrichmentKeys.history(1) });
-      queryClient.invalidateQueries({ queryKey: contactsKeys.list({}) });
+      queryClient.invalidateQueries({ queryKey: contactsKeys.all });
     },
     onError: (error) => {
       toast.error("Failed to apply enrichment results");
