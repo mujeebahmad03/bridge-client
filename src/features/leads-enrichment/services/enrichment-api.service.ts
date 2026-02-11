@@ -6,7 +6,6 @@ import { type ApiResponse } from "@/types/api";
 import type {
   CreatePreviewRequest,
   EnrichmentApplyResponse,
-  EnrichmentApproveResponse,
   EnrichmentFieldResult,
   EnrichmentListResponse,
   EnrichmentPreset,
@@ -136,10 +135,17 @@ class EnrichmentApiService {
         "Failed to fetch enrichment presets"
       );
 
-      // Handle array or { results: [...] } response
+      // Handle array, { data: [...] }, or { results: [...] } response
       let presets: unknown[];
       if (Array.isArray(raw)) {
         presets = raw;
+      } else if (
+        raw &&
+        typeof raw === "object" &&
+        "data" in raw &&
+        Array.isArray((raw as { data: unknown[] }).data)
+      ) {
+        presets = (raw as { data: unknown[] }).data;
       } else if (
         raw &&
         typeof raw === "object" &&
@@ -154,10 +160,17 @@ class EnrichmentApiService {
       // Map to EnrichmentPreset format
       return presets.map((p: unknown) => {
         const item = p as Record<string, unknown>;
+        const requiredFields = item.required_fields;
         return {
           value: String(item.value ?? item.id ?? ""),
           label: String(item.label ?? item.name ?? ""),
           description: String(item.description ?? ""),
+          required_fields: Array.isArray(requiredFields)
+            ? requiredFields.map((f) => String(f))
+            : [],
+          required_fields_description: String(
+            item.required_fields_description ?? ""
+          ),
         } as EnrichmentPreset;
       });
     } catch (e) {
@@ -230,38 +243,9 @@ class EnrichmentApiService {
         ? (raw.pipeline as EnrichmentPreviewResponse["pipeline"])
         : [],
       message: String(
-        raw.message ??
-          "Preview generated. Call /approve/ to execute the enrichment."
+        raw.message ?? "Preview generated. Enrichment will start automatically."
       ),
     };
-  }
-
-  async approveEnrichment(
-    enrichmentRequestId: string
-  ): Promise<EnrichmentApproveResponse> {
-    try {
-      const response = await apiClient.post<unknown>(
-        API_ROUTES.ENRICHMENT.APPROVE_ENRICHMENT(enrichmentRequestId)
-      );
-      const raw = this.unwrapResponse<unknown>(
-        response,
-        "Failed to approve enrichment"
-      );
-      const data = raw as Record<string, unknown>;
-      return {
-        enrichment_request_id: String(
-          data.enrichment_request_id ?? enrichmentRequestId
-        ),
-        status: String(
-          data.status ?? "APPROVED"
-        ) as EnrichmentApproveResponse["status"],
-        message: String(
-          data.message ?? "Enrichment approved and job submitted"
-        ),
-      };
-    } catch (e) {
-      this.handleApiError(e, "Failed to approve enrichment");
-    }
   }
 
   async checkEnrichmentStatus(
@@ -469,12 +453,6 @@ export async function createEnrichmentPreview(
   }>
 ): Promise<EnrichmentPreviewResponse> {
   return enrichmentApiService.createEnrichmentPreview(request, contacts);
-}
-
-export async function approveEnrichment(
-  enrichmentRequestId: string
-): Promise<EnrichmentApproveResponse> {
-  return enrichmentApiService.approveEnrichment(enrichmentRequestId);
 }
 
 export async function checkEnrichmentStatus(

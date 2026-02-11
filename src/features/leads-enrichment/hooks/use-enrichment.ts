@@ -7,7 +7,6 @@ import { toast } from "sonner";
 import { contactsKeys } from "./contacts";
 import {
   applyEnrichmentResults,
-  approveEnrichment,
   checkEnrichmentStatus,
   createEnrichmentPreview,
   fetchEnrichmentHistory,
@@ -85,15 +84,6 @@ export const useEnrichmentWorkflow = ({
     onError: (error) => {
       toast.error("Failed to create enrichment preview");
       console.error("Create preview error:", error);
-    },
-  });
-
-  const approveMutation = useMutation({
-    mutationFn: approveEnrichment,
-    onError: (error) => {
-      toast.error("Failed to start enrichment");
-      console.error("Approve error:", error);
-      setStep("select-type");
     },
   });
 
@@ -226,7 +216,7 @@ export const useEnrichmentWorkflow = ({
     [contacts]
   );
 
-  // Start enrichment with auto-approve
+  // Start enrichment (backend auto-approves on preview creation)
   const startEnrichment = useCallback(
     async (
       type: EnrichmentType,
@@ -252,19 +242,15 @@ export const useEnrichmentWorkflow = ({
           contacts: contactsData,
         });
         setPreview(previewResult);
-
         setStep("processing");
-
-        await approveMutation.mutateAsync(previewResult.enrichment_request_id);
         toast.success("Enrichment started");
-
         return previewResult;
       } catch (error) {
         setStep("select-type");
         throw error;
       }
     },
-    [contactIds, contactsData, createPreviewMutation, approveMutation]
+    [contactIds, contactsData, createPreviewMutation]
   );
 
   // Apply results
@@ -306,7 +292,7 @@ export const useEnrichmentWorkflow = ({
     hasResults,
 
     // Loading states
-    isStarting: createPreviewMutation.isPending || approveMutation.isPending,
+    isStarting: createPreviewMutation.isPending,
     isApplying: applyMutation.isPending,
     isLoadingResults: resultsQuery.isLoading,
 

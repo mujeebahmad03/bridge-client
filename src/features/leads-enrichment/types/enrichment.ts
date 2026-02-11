@@ -5,12 +5,15 @@ export type EnrichmentPresetValue =
   | "VALIDATE_EMAIL"
   | "FIND_WORK_EMAIL"
   | "ENRICH_FROM_LINKEDIN"
-  | "FULL_ENRICHMENT";
+  | "FULL_ENRICHMENT"
+  | "COPY_COLUMN";
 
 export interface EnrichmentPreset {
   value: EnrichmentPresetValue;
   label: string;
   description: string;
+  required_fields: string[];
+  required_fields_description: string;
 }
 
 export type EnrichmentType = "PRESET" | "CUSTOM";

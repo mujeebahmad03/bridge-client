@@ -60,8 +60,6 @@ export const API_ROUTES = {
   },
   ENRICHMENT: {
     CREATE_ENRICHMENT: "contacts/enrichment/preview/",
-    APPROVE_ENRICHMENT: (id: string) =>
-      `contacts/enrichment/${id}/approve/` as const,
     APPLY_ENRICHMENT: (id: string) =>
       `contacts/enrichment/${id}/apply_results/` as const,
     GET_ENRICHMENT_RESULTS: (id: string) =>

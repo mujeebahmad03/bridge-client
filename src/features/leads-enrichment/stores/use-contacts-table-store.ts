@@ -6,6 +6,7 @@ import type {
   CellPosition,
   ContactColumn,
   ContactFieldId,
+  EnrichmentPresetValue,
   Side,
 } from "@/leads/types";
 import {
@@ -48,6 +49,7 @@ interface ContactsTableState {
   isColumnSheetOpen: boolean;
   columnSheetMode: "add" | "edit";
   selectedSheetColumn: ContactColumn | null;
+  pendingAutoPreset: EnrichmentPresetValue | null;
 
   // Navigation model (derived from current list + visible columns order)
   navigationContactIds: string[];
@@ -102,6 +104,8 @@ interface ContactsTableActions {
 
   openAddColumnSheet: () => void;
   openEditColumnSheet: (column: ContactColumn) => void;
+  openEnrichmentWithPreset: (preset: EnrichmentPresetValue) => void;
+  clearPendingAutoPreset: () => void;
   setIsColumnSheetOpen: (open: boolean) => void;
 
   // Initialize with fetched columns (call after columns are loaded)
@@ -133,6 +137,7 @@ const initialState: ContactsTableState = {
   isColumnSheetOpen: false,
   columnSheetMode: "add",
   selectedSheetColumn: null,
+  pendingAutoPreset: null,
   navigationContactIds: [],
   navigationColumnIds: INITIAL_COLUMN_ORDER,
   _hasHydrated: false,
@@ -430,6 +435,16 @@ export const useContactsTableStore = create<ContactsTableStore>()(
           columnSheetMode: "edit",
           selectedSheetColumn: column,
         }),
+
+      openEnrichmentWithPreset: (preset) =>
+        set({
+          isColumnSheetOpen: true,
+          columnSheetMode: "add",
+          selectedSheetColumn: null,
+          pendingAutoPreset: preset,
+        }),
+
+      clearPendingAutoPreset: () => set({ pendingAutoPreset: null }),
 
       setIsColumnSheetOpen: (open) => set({ isColumnSheetOpen: open }),
 

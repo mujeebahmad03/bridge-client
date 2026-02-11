@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -22,6 +24,7 @@ import { EnrichmentPanelContent, EnrichmentPanelFooter } from "../enrichment";
 import { ColumnFieldSelector } from "./column-field-selector";
 import { useEnrichmentPanelController } from "@/leads/hooks";
 import { useColumnSheetController } from "@/leads/hooks/contacts";
+import { useContactsTableStore } from "@/leads/stores";
 
 const CONTACT_COUNT_OPTIONS = [
   { value: "10", label: "First 10 contacts" },
@@ -64,6 +67,24 @@ export const ColumnSheet = () => {
     onStepChange: setCurrentStep,
     onComplete: () => handleOpenChange(false),
   });
+
+  const pendingAutoPreset = useContactsTableStore((s) => s.pendingAutoPreset);
+  const clearPendingAutoPreset = useContactsTableStore(
+    (s) => s.clearPendingAutoPreset
+  );
+  useEffect(() => {
+    if (!open || !pendingAutoPreset || contactIds.length === 0) {
+      return;
+    }
+    clearPendingAutoPreset();
+    enrichmentController.startEnrichment("PRESET", pendingAutoPreset);
+  }, [
+    open,
+    pendingAutoPreset,
+    contactIds.length,
+    clearPendingAutoPreset,
+    enrichmentController,
+  ]);
 
   return (
     <SidebarSheet open={open} onOpenChange={handleOpenChange}>

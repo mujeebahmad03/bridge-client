@@ -1,6 +1,7 @@
 import {
   Briefcase,
   CheckCircle,
+  Copy,
   Linkedin,
   Mail,
   Phone,
@@ -43,6 +44,7 @@ const PRESET_ICONS: Record<EnrichmentPresetValue, React.ReactNode> = {
   FIND_WORK_EMAIL: <Briefcase className="h-5 w-5" />,
   ENRICH_FROM_LINKEDIN: <UserCircle className="h-5 w-5" />,
   FULL_ENRICHMENT: <Sparkles className="h-5 w-5" />,
+  COPY_COLUMN: <Copy className="h-5 w-5" />,
 };
 
 const PRESET_COLORS: Record<EnrichmentPresetValue, string> = {
@@ -60,6 +62,7 @@ const PRESET_COLORS: Record<EnrichmentPresetValue, string> = {
     "bg-cyan-500/10 text-cyan-600 border-cyan-500/20 hover:bg-cyan-500/20",
   FULL_ENRICHMENT:
     "bg-gradient-to-r from-purple-500/10 to-pink-500/10 text-purple-600 border-purple-500/20 hover:from-purple-500/20 hover:to-pink-500/20",
+  COPY_COLUMN: "bg-muted text-muted-foreground border-border hover:bg-muted/80",
 };
 
 export function PresetSelector({

@@ -8,7 +8,9 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useMemo } from "react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -29,18 +31,50 @@ import {
   useFileUploadDialogState,
   useFileUploadStore,
 } from "@/leads/stores";
+import {
+  getMissingRequiredFields,
+  getRequiredFieldDisplayName,
+} from "@/leads/utils/enrichment.utils";
 
 export function FileUploadDialog() {
   const router = useRouter();
-  const { isOpen, step, validation, isDragOver, isValidating, isSubmitting } =
-    useFileUploadDialogState();
+  const {
+    isOpen,
+    step,
+    selectedPreset,
+    validation,
+    isDragOver,
+    isValidating,
+    isSubmitting,
+  } = useFileUploadDialogState();
 
   const closeDialog = useFileUploadStore((state) => state.closeDialog);
   const setStep = useFileUploadStore((state) => state.setStep);
   const setIsDragOver = useFileUploadStore((state) => state.setIsDragOver);
 
   const activeMappings = useActiveMappings();
+  const mappings = useFileUploadStore((state) => state.mappings);
   const { handleDrop, handleFileSelect, handleEnrich } = useFileUpload();
+
+  const mappedTargetIds = useMemo(
+    () => mappings.map((m) => m.targetFieldId),
+    [mappings]
+  );
+
+  const missingRequiredFields = useMemo(() => {
+    if (!selectedPreset?.required_fields?.length) {
+      return [];
+    }
+    return getMissingRequiredFields(
+      selectedPreset.required_fields,
+      mappedTargetIds
+    );
+  }, [selectedPreset, mappedTargetIds]);
+
+  const hasRequiredFieldsError =
+    selectedPreset &&
+    selectedPreset.required_fields?.length > 0 &&
+    missingRequiredFields.length > 0;
 
   const handleCreateCampaign = () => {
     closeDialog();
@@ -48,9 +82,10 @@ export function FileUploadDialog() {
   };
 
   const handleEnrichSuccess = (importTag: string) => {
-    router.push(
-      `${DASHBOARD_ROUTES.LEADS_ENRICHMENT_CONTACT}?tag=${importTag}`
-    );
+    const url = selectedPreset
+      ? `${DASHBOARD_ROUTES.LEADS_ENRICHMENT_CONTACT}?tag=${importTag}&preset=${selectedPreset.value}`
+      : `${DASHBOARD_ROUTES.LEADS_ENRICHMENT_CONTACT}?tag=${importTag}`;
+    router.push(url);
   };
 
   return (
@@ -68,6 +103,11 @@ export function FileUploadDialog() {
             {step === "mapping" &&
               "Match your file columns to the system fields and review the data below"}
           </DialogDescription>
+          {selectedPreset && (
+            <Badge variant="secondary" className="mt-2 w-fit">
+              Workflow: {selectedPreset.label}
+            </Badge>
+          )}
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto py-4">
@@ -87,6 +127,20 @@ export function FileUploadDialog() {
           )}
 
           {step === "mapping" && validation && <ColumnMapper />}
+
+          {step === "mapping" && hasRequiredFieldsError && (
+            <div
+              className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive"
+              role="alert"
+              aria-live="polite"
+            >
+              This workflow requires:{" "}
+              {missingRequiredFields
+                .map((key) => getRequiredFieldDisplayName(key))
+                .join(", ")}
+              . Map these columns to continue.
+            </div>
+          )}
         </div>
 
         <DialogFooter className="gap-2">
@@ -119,7 +173,11 @@ export function FileUploadDialog() {
               </Button>
               <Button
                 onClick={() => handleEnrich(handleEnrichSuccess)}
-                disabled={isSubmitting || activeMappings.length === 0}
+                disabled={
+                  isSubmitting ||
+                  activeMappings.length === 0 ||
+                  Boolean(hasRequiredFieldsError)
+                }
                 className="gap-2"
               >
                 {isSubmitting ? (

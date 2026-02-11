@@ -3,6 +3,7 @@ import { create } from "zustand";
 import { useShallow } from "zustand/react/shallow";
 
 import type {
+  EnrichmentPreset,
   FieldMapping,
   FileValidationResult,
   UploadStep,
@@ -13,6 +14,7 @@ interface FileUploadState {
   // Dialog state
   isOpen: boolean;
   step: UploadStep;
+  selectedPreset: EnrichmentPreset | null;
 
   // File data
   file: File | null;
@@ -28,6 +30,7 @@ interface FileUploadState {
 interface FileUploadActions {
   // Dialog actions
   openDialog: () => void;
+  openDialogWithPreset: (preset: EnrichmentPreset) => void;
   closeDialog: () => void;
   setStep: (step: UploadStep) => void;
 
@@ -57,6 +60,7 @@ type FileUploadStore = FileUploadState & FileUploadActions;
 const initialState: FileUploadState = {
   isOpen: false,
   step: "upload",
+  selectedPreset: null,
   file: null,
   validation: null,
   mappings: [],
@@ -69,7 +73,10 @@ const initialState: FileUploadState = {
 export const useFileUploadStore = create<FileUploadStore>((set, get) => ({
   ...initialState,
 
-  openDialog: () => set({ isOpen: true }),
+  openDialog: () => set({ isOpen: true, selectedPreset: null }),
+
+  openDialogWithPreset: (preset) =>
+    set({ isOpen: true, selectedPreset: preset }),
 
   closeDialog: () => {
     set({ isOpen: false });
@@ -137,6 +144,7 @@ export const useFileUploadDialogState = () =>
     useShallow((state) => ({
       isOpen: state.isOpen,
       step: state.step,
+      selectedPreset: state.selectedPreset,
       file: state.file,
       validation: state.validation,
       mappings: state.mappings,
@@ -150,6 +158,7 @@ export const useFileUploadActions = () =>
   useFileUploadStore(
     useShallow((state) => ({
       openDialog: state.openDialog,
+      openDialogWithPreset: state.openDialogWithPreset,
       closeDialog: state.closeDialog,
       setStep: state.setStep,
       setFile: state.setFile,
