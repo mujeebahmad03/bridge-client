@@ -4,8 +4,8 @@ import { useCallback, useState } from "react";
 
 import { useEnrichmentWorkflow } from "../use-enrichment";
 import type {
-  type Contact,
-  type EnrichmentPresetValue,
+  Contact,
+  EnrichmentPresetValue,
   EnrichmentStatus,
 } from "@/leads/types";
 
