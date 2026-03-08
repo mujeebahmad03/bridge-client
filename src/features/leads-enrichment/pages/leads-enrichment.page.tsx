@@ -19,9 +19,9 @@ export const LeadsEnrichmentPage = () => {
         {/* Returning user - compact import, tabbed history */}
         <ImportSourcesSection variant="compact" />
 
-        <UploadHistoryTable />
-
         <WorkflowTemplatesSection />
+
+        <UploadHistoryTable />
       </div>
     </div>
   );

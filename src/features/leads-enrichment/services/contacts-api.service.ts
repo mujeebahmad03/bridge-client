@@ -167,7 +167,7 @@ class ContactsApiService {
         queryParams.search = params.search.trim();
       }
       if (params?.tag?.trim()) {
-        queryParams.tag = params.tag.trim();
+        queryParams.tags = params.tag.trim();
       }
       queryParams.page_size = 10_000;
 
@@ -413,7 +413,7 @@ function normalizeContact(raw: Record<string, unknown>): Contact {
   }
 
   const now = new Date().toISOString();
-  return {
+  const contact: Contact = {
     id: String(raw.id ?? raw.external_id ?? ""),
     first_name: String(raw.first_name ?? ""),
     last_name: String(raw.last_name ?? ""),
@@ -429,6 +429,16 @@ function normalizeContact(raw: Record<string, unknown>): Contact {
     updated_at: String(raw.updated_at ?? now),
     ...(Object.keys(custom_fields).length ? { custom_fields } : {}),
   };
+  if (raw.external_id !== null) {
+    contact.external_id = String(raw.external_id);
+  }
+  if (raw.enrichment_id !== null) {
+    contact.enrichment_id = String(raw.enrichment_id);
+  }
+  if (raw.record_type !== null) {
+    contact.record_type = String(raw.record_type);
+  }
+  return contact;
 }
 
 /** Build create-contact request body */

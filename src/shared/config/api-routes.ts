@@ -69,7 +69,8 @@ export const API_ROUTES = {
     GET_ENRICHMENT_REQUESTS: "contacts/enrichment/",
   },
   CONTACTS: {
-    GET_CONTACT_DATA_TABLE: "contacts/datatable/contacts-datatable/",
+    GET_CONTACT_DATA_TABLE:
+      "contacts/enrichment-datatable/enrichments-datatable/",
     GET_CONTACTS: "contacts/",
     GET_CONTACT: (id: string) => `contacts/${id}/` as const,
     CREATE_CONTACT: "contacts/",

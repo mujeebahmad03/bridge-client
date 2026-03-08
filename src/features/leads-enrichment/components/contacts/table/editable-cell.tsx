@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 
 import { cn } from "@/lib/utils";
 
@@ -20,12 +21,14 @@ interface EditableCellProps {
   contactId: string;
   value: string;
   column: ContactColumn;
+  isEnriching?: boolean;
 }
 
 export const EditableCell = ({
   contactId,
   value,
   column,
+  isEnriching = false,
 }: EditableCellProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const cellRef = useRef<HTMLDivElement>(null);
@@ -57,6 +60,19 @@ export const EditableCell = ({
       cellRef.current.focus();
     }
   }, [isActive, isEditing]);
+
+  // Enriching: show skeleton and disable interaction
+  if (isEnriching) {
+    return (
+      <div
+        className="h-full w-full min-h-[36px] px-3 py-2 flex items-center pointer-events-none"
+        aria-disabled="true"
+        tabIndex={-1}
+      >
+        <Skeleton className="h-4 w-full" />
+      </div>
+    );
+  }
 
   // Render select dropdown for select type columns
   if ((column.type === "select" || column.type === "boolean") && isEditing) {

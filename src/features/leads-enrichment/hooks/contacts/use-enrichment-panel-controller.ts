@@ -3,7 +3,11 @@
 import { useCallback, useState } from "react";
 
 import { useEnrichmentWorkflow } from "../use-enrichment";
-import { type Contact, type EnrichmentPresetValue } from "@/leads/types";
+import type {
+  type Contact,
+  type EnrichmentPresetValue,
+  EnrichmentStatus,
+} from "@/leads/types";
 
 export type TabType = "preset" | "custom";
 
@@ -14,6 +18,11 @@ export interface EnrichmentPanelProps {
   onComplete?: () => void;
   onCancel?: () => void;
   onStepChange?: (step: string) => void;
+  onEnrichmentStarted?: (params: { enrichmentRequestId: string }) => void;
+  onEnrichmentStatusChange?: (
+    enrichmentRequestId: string,
+    status: EnrichmentStatus
+  ) => void;
 }
 
 export type EnrichmentPanelControllerProps = Omit<
@@ -26,6 +35,8 @@ export function useEnrichmentPanelController({
   contactsToEnrich,
   onStepChange,
   onComplete,
+  onEnrichmentStarted,
+  onEnrichmentStatusChange,
 }: Omit<EnrichmentPanelProps, "disabled" | "onCancel">) {
   // PresetSelector local state
   const [selectedPreset, setSelectedPreset] =
@@ -38,6 +49,8 @@ export function useEnrichmentPanelController({
     contacts: contactsToEnrich,
     onStepChange,
     onComplete,
+    onEnrichmentStarted,
+    onEnrichmentStatusChange,
   });
 
   const handleStartEnrichment = useCallback(() => {

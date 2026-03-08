@@ -147,7 +147,7 @@ export const ContactTable = () => {
   return (
     <div
       className={cn(
-        "flex flex-col h-full w-full",
+        "flex flex-col h-full min-h-0 w-full",
         // On larger screens, reserve space so the sheet doesn't cover the table.
         isColumnSheetOpen && "md:pr-128 transition-[padding] duration-300"
       )}
@@ -158,12 +158,9 @@ export const ContactTable = () => {
         ref={tableRef}
         tabIndex={0}
         onKeyDown={handleTableKeyDown}
-        className="flex-1 border border-border rounded-lg overflow-hidden bg-card focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+        className="flex flex-1 flex-col min-h-0 border border-border rounded-lg overflow-hidden bg-card focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
       >
-        <div
-          ref={scrollRef}
-          className="h-[calc(100vh-340px)] min-h-[300px] overflow-auto"
-        >
+        <div ref={scrollRef} className="flex-1 min-h-[300px] overflow-auto">
           <table className="w-full border-collapse">
             <thead className="sticky top-0 z-20 bg-muted/80 backdrop-blur-sm">
               <tr className="border-b border-border">

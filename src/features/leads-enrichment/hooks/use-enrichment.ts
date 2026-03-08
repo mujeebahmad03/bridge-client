@@ -18,6 +18,7 @@ import type {
   CreatePreviewRequest,
   EnrichmentPresetValue,
   EnrichmentPreviewResponse,
+  EnrichmentStatus,
   EnrichmentType,
   EnrichmentWorkflowStep,
 } from "@/leads/types";
@@ -47,6 +48,11 @@ interface UseEnrichmentWorkflowOptions {
   contacts: Contact[];
   onStepChange?: (step: EnrichmentWorkflowStep) => void;
   onComplete?: () => void;
+  onEnrichmentStarted?: (params: { enrichmentRequestId: string }) => void;
+  onEnrichmentStatusChange?: (
+    enrichmentRequestId: string,
+    status: EnrichmentStatus
+  ) => void;
 }
 
 export const useEnrichmentWorkflow = ({
@@ -54,6 +60,8 @@ export const useEnrichmentWorkflow = ({
   contacts,
   onStepChange,
   onComplete,
+  onEnrichmentStarted,
+  onEnrichmentStatusChange,
 }: UseEnrichmentWorkflowOptions) => {
   const queryClient = useQueryClient();
 
@@ -101,7 +109,7 @@ export const useEnrichmentWorkflow = ({
     },
   });
 
-  // Status polling - stops when RESULTS_READY, SUCCESSFUL, or FAILED
+  // Status polling - run whenever we have an active preview (so we detect RESULTS_READY/SUCCESSFUL/FAILED even when UI stays on select-type)
   const statusQuery = useQuery({
     queryKey: enrichmentKeys.status(enrichmentRequestId ?? ""),
     queryFn: () => {
@@ -110,7 +118,7 @@ export const useEnrichmentWorkflow = ({
       }
       return checkEnrichmentStatus(enrichmentRequestId);
     },
-    enabled: !!enrichmentRequestId && step === "processing",
+    enabled: !!enrichmentRequestId,
     refetchInterval: (query) => {
       const status = query.state.data?.status;
       // Stop polling when results are ready or final state reached
@@ -190,6 +198,30 @@ export const useEnrichmentWorkflow = ({
     }
   }, [isApplied, onComplete]);
 
+  // Notify parent of status changes (RESULTS_READY, SUCCESSFUL, FAILED) for store sync
+  // When status becomes SUCCESSFUL, invalidate contacts so the data table refetches and shows enriched data
+  const lastStatusRef = useRef<EnrichmentStatus | null>(null);
+  useEffect(() => {
+    if (!enrichmentRequestId || !status?.status) {
+      return;
+    }
+    const s = status.status;
+    if (s === "RESULTS_READY" || s === "SUCCESSFUL" || s === "FAILED") {
+      if (lastStatusRef.current !== s) {
+        lastStatusRef.current = s;
+        onEnrichmentStatusChange?.(enrichmentRequestId, s);
+        if (s === "SUCCESSFUL") {
+          queryClient.invalidateQueries({ queryKey: contactsKeys.all });
+        }
+      }
+    }
+  }, [
+    enrichmentRequestId,
+    status?.status,
+    onEnrichmentStatusChange,
+    queryClient,
+  ]);
+
   // Side-effect only: show error toast when enrichment fails
   const lastFailedRequestIdRef = useRef<string | null>(null);
 
@@ -243,6 +275,9 @@ export const useEnrichmentWorkflow = ({
         });
         setPreview(previewResult);
         setStep("processing");
+        onEnrichmentStarted?.({
+          enrichmentRequestId: previewResult.enrichment_request_id,
+        });
         toast.success("Enrichment started");
         return previewResult;
       } catch (error) {
@@ -250,7 +285,7 @@ export const useEnrichmentWorkflow = ({
         throw error;
       }
     },
-    [contactIds, contactsData, createPreviewMutation]
+    [contactIds, contactsData, createPreviewMutation, onEnrichmentStarted]
   );
 
   // Apply results

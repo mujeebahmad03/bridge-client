@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 
 import { Label } from "@/components/ui/label";
 import {
@@ -25,6 +25,7 @@ import { ColumnFieldSelector } from "./column-field-selector";
 import { useEnrichmentPanelController } from "@/leads/hooks";
 import { useColumnSheetController } from "@/leads/hooks/contacts";
 import { useContactsTableStore } from "@/leads/stores";
+import type { EnrichmentStatus } from "@/leads/types";
 
 const CONTACT_COUNT_OPTIONS = [
   { value: "10", label: "First 10 contacts" },
@@ -43,7 +44,6 @@ export const ColumnSheet = () => {
     selectedColumnLabel,
     isCustomColumn,
     isCreatingColumn,
-    currentStep,
     contactCount,
     contactsToEnrich,
     contactIds,
@@ -59,6 +59,42 @@ export const ColumnSheet = () => {
     getDescription,
   } = useColumnSheetController();
 
+  const addActiveEnrichment = useContactsTableStore(
+    (s) => s.addActiveEnrichment
+  );
+  const updateEnrichmentStatus = useContactsTableStore(
+    (s) => s.updateEnrichmentStatus
+  );
+  const removeActiveEnrichment = useContactsTableStore(
+    (s) => s.removeActiveEnrichment
+  );
+  const pendingAutoPreset = useContactsTableStore((s) => s.pendingAutoPreset);
+  const clearPendingAutoPreset = useContactsTableStore(
+    (s) => s.clearPendingAutoPreset
+  );
+
+  const onEnrichmentStarted = useCallback(
+    (params: { enrichmentRequestId: string }) => {
+      addActiveEnrichment({
+        columnId: selectedColumnId,
+        contactIds,
+        enrichmentRequestId: params.enrichmentRequestId,
+      });
+    },
+    [addActiveEnrichment, selectedColumnId, contactIds]
+  );
+
+  const onEnrichmentStatusChange = useCallback(
+    (enrichmentRequestId: string, status: EnrichmentStatus) => {
+      if (status === "RESULTS_READY") {
+        updateEnrichmentStatus(enrichmentRequestId, "results_ready");
+      } else if (status === "SUCCESSFUL" || status === "FAILED") {
+        removeActiveEnrichment(enrichmentRequestId);
+      }
+    },
+    [updateEnrichmentStatus, removeActiveEnrichment]
+  );
+
   // Initialize enrichment controller
   // Key forces remount on open to reset state, avoiding stale workflow state
   const enrichmentController = useEnrichmentPanelController({
@@ -66,12 +102,10 @@ export const ColumnSheet = () => {
     contactsToEnrich,
     onStepChange: setCurrentStep,
     onComplete: () => handleOpenChange(false),
+    onEnrichmentStarted,
+    onEnrichmentStatusChange,
   });
 
-  const pendingAutoPreset = useContactsTableStore((s) => s.pendingAutoPreset);
-  const clearPendingAutoPreset = useContactsTableStore(
-    (s) => s.clearPendingAutoPreset
-  );
   useEffect(() => {
     if (!open || !pendingAutoPreset || contactIds.length === 0) {
       return;
@@ -96,65 +130,56 @@ export const ColumnSheet = () => {
 
         <div className="overflow-y-auto h-full">
           <div className="px-6 py-4 space-y-6">
-            {/* Column Selection & Contact Count - Only visible in initial step */}
-            {currentStep === "select-type" && (
-              <>
-                {/* Column Selection */}
-                <div className="space-y-3">
-                  <Label className="text-sm font-medium">Column</Label>
-                  <ColumnFieldSelector
-                    value={selectedColumnId}
-                    displayValue={selectedColumnLabel}
-                    onValueChange={handleColumnSelect}
-                    onCreateNew={handleCreateColumn}
-                    columns={availableColumns}
-                    isCreating={isCreatingColumn}
-                    isLoading={columnsLoading}
-                    disabled={mode === "edit"}
-                    placeholder={
-                      mode === "edit"
-                        ? selectedColumn?.label
-                        : "Select or create column..."
-                    }
-                  />
-                  {isCustomColumn && selectedColumnLabel && (
-                    <p className="text-xs text-muted-foreground">
-                      New column &quot;{selectedColumnLabel}&quot; will be
-                      created
-                    </p>
-                  )}
-                </div>
+            {/* Column Selection & Contact Count - Always visible */}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Column</Label>
+              <ColumnFieldSelector
+                value={selectedColumnId}
+                displayValue={selectedColumnLabel}
+                onValueChange={handleColumnSelect}
+                onCreateNew={handleCreateColumn}
+                columns={availableColumns}
+                isCreating={isCreatingColumn}
+                isLoading={columnsLoading}
+                disabled={mode === "edit"}
+                placeholder={
+                  mode === "edit"
+                    ? selectedColumn?.label
+                    : "Select or create column..."
+                }
+              />
+              {isCustomColumn && selectedColumnLabel && (
+                <p className="text-xs text-muted-foreground">
+                  New column &quot;{selectedColumnLabel}&quot; will be created
+                </p>
+              )}
+            </div>
 
-                <Separator />
+            <Separator />
 
-                {/* Contact Count Selection */}
-                <div className="space-y-3">
-                  <Label className="text-sm font-medium">Run on</Label>
-                  <Select value={contactCount} onValueChange={setContactCount}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select how many contacts..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CONTACT_COUNT_OPTIONS.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Run on</Label>
+              <Select value={contactCount} onValueChange={setContactCount}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select how many contacts..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {CONTACT_COUNT_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-                <Separator />
+            <Separator />
 
-                <div className="space-y-1">
-                  <Label className="text-sm font-medium">
-                    Enrichment Action
-                  </Label>
-                </div>
-              </>
-            )}
+            <div className="space-y-1">
+              <Label className="text-sm font-medium">Enrichment Action</Label>
+            </div>
 
-            {/* Enrichment Panel Content */}
+            {/* Enrichment Panel Content - PresetSelector only */}
             <EnrichmentPanelContent
               controller={enrichmentController}
               disabled={!hasColumn}

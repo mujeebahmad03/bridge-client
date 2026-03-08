@@ -19,6 +19,7 @@ export interface ContactAddress {
 
 export interface Contact {
   id: string;
+  external_id?: string;
   first_name: string;
   last_name: string;
   other_names: string;
@@ -26,10 +27,13 @@ export interface Contact {
   primary_phone_number: string;
   linkedin_profile: string;
   acquisition_source: AcquisitionSource;
-  address: ContactAddress;
+  address: ContactAddress | string;
   is_potential_lead: boolean;
   created_at: string;
   updated_at: string;
+  /** Set when contact_list_id is not present (e.g. ad-hoc enrichment). */
+  enrichment_id?: string;
+  record_type?: string;
   /**
    * Persisted custom columns/fields. These are not part of the core contact schema
    * and may be created by users (e.g. via the Column Sheet).

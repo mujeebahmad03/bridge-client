@@ -14,6 +14,17 @@ import {
   SYSTEM_CONTACT_COLUMNS,
 } from "@/leads/types";
 
+// ==================== Active Enrichment Types ====================
+
+export type ActiveEnrichmentStatus = "processing" | "results_ready";
+
+export interface ActiveEnrichment {
+  columnId: string;
+  contactIds: string[];
+  enrichmentRequestId: string;
+  status?: ActiveEnrichmentStatus;
+}
+
 // ==================== Store Types ====================
 
 interface ContactsTableState {
@@ -54,6 +65,9 @@ interface ContactsTableState {
   // Navigation model (derived from current list + visible columns order)
   navigationContactIds: string[];
   navigationColumnIds: ContactFieldId[];
+
+  // Active enrichments (per-column loading; not persisted)
+  activeEnrichments: ActiveEnrichment[];
 
   // Hydration flag for SSR
   _hasHydrated: boolean;
@@ -112,6 +126,14 @@ interface ContactsTableActions {
   initializeWithColumns: (columns: ContactColumn[]) => void;
 
   setHasHydrated: (value: boolean) => void;
+
+  // Active enrichments (per-column loading)
+  addActiveEnrichment: (payload: ActiveEnrichment) => void;
+  updateEnrichmentStatus: (
+    enrichmentRequestId: string,
+    status: ActiveEnrichmentStatus
+  ) => void;
+  removeActiveEnrichment: (enrichmentRequestId: string) => void;
 }
 
 type ContactsTableStore = ContactsTableState & ContactsTableActions;
@@ -140,6 +162,7 @@ const initialState: ContactsTableState = {
   pendingAutoPreset: null,
   navigationContactIds: [],
   navigationColumnIds: INITIAL_COLUMN_ORDER,
+  activeEnrichments: [],
   _hasHydrated: false,
 };
 
@@ -471,6 +494,25 @@ export const useContactsTableStore = create<ContactsTableStore>()(
         }),
 
       setHasHydrated: (value) => set({ _hasHydrated: value }),
+
+      addActiveEnrichment: (payload) =>
+        set((state) => ({
+          activeEnrichments: [...state.activeEnrichments, payload],
+        })),
+
+      updateEnrichmentStatus: (enrichmentRequestId, status) =>
+        set((state) => ({
+          activeEnrichments: state.activeEnrichments.map((e) =>
+            e.enrichmentRequestId === enrichmentRequestId ? { ...e, status } : e
+          ),
+        })),
+
+      removeActiveEnrichment: (enrichmentRequestId) =>
+        set((state) => ({
+          activeEnrichments: state.activeEnrichments.filter(
+            (e) => e.enrichmentRequestId !== enrichmentRequestId
+          ),
+        })),
     }),
     {
       name: "contacts-table-config",

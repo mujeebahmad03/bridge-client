@@ -195,6 +195,9 @@ class EnrichmentApiService {
       if (request.contact_list_id) {
         body.contact_list_id = request.contact_list_id;
       }
+      if (!request.contact_list_id && request.enrichment_id) {
+        body.enrichment_id = request.enrichment_id;
+      }
       if (request.preset_action) {
         body.preset_action = request.preset_action;
       }

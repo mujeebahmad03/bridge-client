@@ -73,6 +73,8 @@ export interface EnrichmentPreviewResponse {
 export interface CreatePreviewRequest {
   contact_ids?: string[];
   contact_list_id?: string;
+  /** Passed when contact_list_id is not present (e.g. ad-hoc enrichment from table). */
+  enrichment_id?: string;
   enrichment_type: EnrichmentType;
   preset_action?: EnrichmentPresetValue;
   enrichment_description?: string;

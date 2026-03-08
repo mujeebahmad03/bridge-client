@@ -48,9 +48,15 @@ type ApiResponse<T = unknown> =
       pagination: Pagination;
     };
 
+/** Response from the refresh token endpoint (prod / non-dev returns only access + refresh). */
+export interface RefreshTokenResponse {
+  access: string;
+  refresh: string;
+}
+
 interface TokenPair {
   access: string;
-  token: string;
+  token?: string;
   refresh: string;
 }
 

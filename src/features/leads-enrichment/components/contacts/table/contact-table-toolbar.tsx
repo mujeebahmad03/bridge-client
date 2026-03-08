@@ -27,7 +27,7 @@ export const ContactTableToolbar = () => {
   } = useContactTableToolbarController();
 
   return (
-    <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between mb-4">
+    <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between mb-4 px-4">
       <div className="flex items-center gap-2 w-full sm:w-auto">
         <div className="relative flex-1 sm:flex-initial">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

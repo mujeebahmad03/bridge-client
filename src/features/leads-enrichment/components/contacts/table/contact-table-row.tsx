@@ -5,10 +5,57 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 
 import { EditableCell } from "./editable-cell";
-import { useContactRowController } from "@/leads/hooks/contacts";
+import {
+  useContactRowController,
+  useIsCellEnriching,
+} from "@/leads/hooks/contacts";
 import { getContactFieldValue } from "@/leads/services";
 import { useContactsTableStore } from "@/leads/stores";
 import type { Contact, ContactColumn } from "@/leads/types";
+
+/** Renders a single data cell so we can call useIsCellEnriching per cell */
+const ContactTableCell = memo(
+  ({
+    contact,
+    column,
+    cellValue,
+    width,
+    stickyStyle,
+    onCellClick,
+  }: {
+    contact: Contact;
+    column: ContactColumn;
+    cellValue: string;
+    width: number;
+    stickyStyle?: React.CSSProperties;
+    onCellClick: (columnId: string) => void;
+  }) => {
+    const isEnriching = useIsCellEnriching(contact.id, column.id);
+    return (
+      <td
+        className={cn(
+          "border-r border-border p-0",
+          stickyStyle && "sticky z-10 bg-background"
+        )}
+        style={{
+          width,
+          minWidth: width,
+          maxWidth: width,
+          ...stickyStyle,
+        }}
+        onClick={() => !isEnriching && onCellClick(column.id)}
+      >
+        <EditableCell
+          contactId={contact.id}
+          value={cellValue}
+          column={column}
+          isEnriching={isEnriching}
+        />
+      </td>
+    );
+  }
+);
+ContactTableCell.displayName = "ContactTableCell";
 
 interface ContactTableRowProps {
   contact: Contact;
@@ -102,28 +149,18 @@ export const ContactTableRow = memo(
                 ? "Yes"
                 : "No"
               : String(rawValue ?? "");
-
           const width = columnWidths.get(column.id) ?? column.width ?? 120;
           const leftOffset = getLeftOffset(index);
-
           return (
-            <td
+            <ContactTableCell
               key={column.id}
-              className="border-r border-border p-0 sticky z-10 bg-background"
-              style={{
-                width,
-                minWidth: width,
-                maxWidth: width,
-                left: `${leftOffset}px`,
-              }}
-              onClick={() => handleCellClick(column.id)}
-            >
-              <EditableCell
-                contactId={contact.id}
-                value={cellValue}
-                column={column}
-              />
-            </td>
+              contact={contact}
+              column={column}
+              cellValue={cellValue}
+              width={width}
+              stickyStyle={{ left: `${leftOffset}px` }}
+              onCellClick={handleCellClick}
+            />
           );
         })}
 
@@ -141,22 +178,16 @@ export const ContactTableRow = memo(
                 ? "Yes"
                 : "No"
               : String(rawValue ?? "");
-
           const width = columnWidths.get(column.id) ?? column.width ?? 120;
-
           return (
-            <td
+            <ContactTableCell
               key={column.id}
-              className="border-r border-border p-0"
-              style={{ width, minWidth: width, maxWidth: width }}
-              onClick={() => handleCellClick(column.id)}
-            >
-              <EditableCell
-                contactId={contact.id}
-                value={cellValue}
-                column={column}
-              />
-            </td>
+              contact={contact}
+              column={column}
+              cellValue={cellValue}
+              width={width}
+              onCellClick={handleCellClick}
+            />
           );
         })}
 
@@ -174,28 +205,18 @@ export const ContactTableRow = memo(
                 ? "Yes"
                 : "No"
               : String(rawValue ?? "");
-
           const width = columnWidths.get(column.id) ?? column.width ?? 120;
           const rightOffset = getRightOffset(index);
-
           return (
-            <td
+            <ContactTableCell
               key={column.id}
-              className="border-r border-border p-0 sticky z-10 bg-background"
-              style={{
-                width,
-                minWidth: width,
-                maxWidth: width,
-                right: `${rightOffset}px`,
-              }}
-              onClick={() => handleCellClick(column.id)}
-            >
-              <EditableCell
-                contactId={contact.id}
-                value={cellValue}
-                column={column}
-              />
-            </td>
+              contact={contact}
+              column={column}
+              cellValue={cellValue}
+              width={width}
+              stickyStyle={{ right: `${rightOffset}px` }}
+              onCellClick={handleCellClick}
+            />
           );
         })}
 

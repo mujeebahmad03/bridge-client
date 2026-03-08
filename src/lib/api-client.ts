@@ -12,7 +12,7 @@ import { API_ROUTES } from "@/config/api-routes";
 import {
   type ApiResponse,
   type ErrorResponse,
-  type TokenPair,
+  type RefreshTokenResponse,
 } from "@/types/api";
 
 import { env } from "./env";
@@ -166,18 +166,21 @@ class ApiClient {
     }
 
     try {
-      const response = await axios.post<TokenPair>(
+      const response = await axios.post<RefreshTokenResponse>(
         `${env.NEXT_PUBLIC_API_URL}${API_ROUTES.AUTH.REFRESH_TOKEN}`,
         { refresh: refreshToken }
       );
 
       const newRefreshToken =
-        env.NODE_ENV === "production" ? response.data.refresh : refreshToken;
+        env.NODE_ENV !== "development" ? response.data.refresh : refreshToken;
 
       if (response.data) {
-        const tokens = response.data as TokenPair;
-        await TokenStorage.setTokens({ ...tokens, refresh: newRefreshToken });
-        return tokens.access;
+        const { access } = response.data;
+        await TokenStorage.setTokens({
+          access,
+          refresh: newRefreshToken,
+        });
+        return access;
       }
 
       throw new ApiError(response.status, "Failed to refresh token");
