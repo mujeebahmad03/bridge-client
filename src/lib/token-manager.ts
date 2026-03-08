@@ -47,7 +47,10 @@ export class TokenStorage {
   static async setTokens(tokens: TokenPair) {
     const { access, token, refresh } = tokens;
 
-    const accessToken = access ? access : token;
+    const accessToken = access ?? token;
+    if (typeof accessToken !== "string") {
+      throw new Error("TokenPair must include access or token");
+    }
 
     const encryptedAccessToken = await this.encrypt(accessToken, 24 * 60 * 60);
 

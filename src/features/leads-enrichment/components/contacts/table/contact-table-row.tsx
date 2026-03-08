@@ -11,7 +11,7 @@ import {
 } from "@/leads/hooks/contacts";
 import { getContactFieldValue } from "@/leads/services";
 import { useContactsTableStore } from "@/leads/stores";
-import type { Contact, ContactColumn } from "@/leads/types";
+import type { Contact, ContactColumn, ContactFieldId } from "@/leads/types";
 
 /** Renders a single data cell so we can call useIsCellEnriching per cell */
 const ContactTableCell = memo(
@@ -28,7 +28,7 @@ const ContactTableCell = memo(
     cellValue: string;
     width: number;
     stickyStyle?: React.CSSProperties;
-    onCellClick: (columnId: string) => void;
+    onCellClick: (columnId: ContactFieldId) => void;
   }) => {
     const isEnriching = useIsCellEnriching(contact.id, column.id);
     return (
