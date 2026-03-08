@@ -274,6 +274,13 @@ export const useEnrichmentWorkflow = ({
           contacts: contactsData,
         });
         setPreview(previewResult);
+
+        if (previewResult.status === "FAILED") {
+          toast.error(previewResult.error_message ?? "Enrichment failed");
+          setStep("select-type");
+          return previewResult;
+        }
+
         setStep("processing");
         onEnrichmentStarted?.({
           enrichmentRequestId: previewResult.enrichment_request_id,

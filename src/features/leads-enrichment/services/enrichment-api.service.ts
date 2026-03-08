@@ -248,6 +248,9 @@ class EnrichmentApiService {
       message: String(
         raw.message ?? "Preview generated. Enrichment will start automatically."
       ),
+      ...(raw.error_message !== null && raw.error_message !== ""
+        ? { error_message: String(raw.error_message) }
+        : {}),
     };
   }
 

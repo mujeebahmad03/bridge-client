@@ -7,7 +7,6 @@ import { useState } from "react";
 
 import { SortableHeader } from "@/components/data-table";
 import { NewDataTable } from "@/components/new-data-table";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -62,22 +61,6 @@ const columns: ColumnDef<UploadHistoryItem>[] = [
     cell: ({ row }) => (
       <span className="text-muted-foreground">{row.getValue("source")}</span>
     ),
-  },
-  {
-    accessorKey: "status",
-    header: ({ column }) => <SortableHeader column={column} title="Status" />,
-    cell: ({ row }) => {
-      const status = row.getValue("status") as UploadStatus;
-      const config = statusConfig[status];
-      return (
-        <Badge
-          variant="secondary"
-          className={cn("font-medium", config.className)}
-        >
-          {config.label}
-        </Badge>
-      );
-    },
   },
   {
     accessorKey: "feature_mapping",

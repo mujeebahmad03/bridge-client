@@ -68,6 +68,8 @@ export interface EnrichmentPreviewResponse {
   contacts: EnrichmentContactPreview[];
   pipeline: PipelineConfig[];
   message: string;
+  /** Set when status is FAILED (e.g. from create or status endpoint). */
+  error_message?: string;
 }
 
 export interface CreatePreviewRequest {
