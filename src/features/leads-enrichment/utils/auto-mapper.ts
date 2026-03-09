@@ -133,6 +133,9 @@ const FIELD_ALIASES: Record<SystemFieldKey, string[]> = {
     "companywebsite",
     "website",
     "url",
+    "company_domain",
+    "companydomain",
+    "domain",
     "web",
     "site",
     "homepage",
@@ -157,7 +160,6 @@ const FIELD_ALIASES: Record<SystemFieldKey, string[]> = {
     "referral_source",
     "how_heard",
   ],
-  HEADLINE: ["headline", "title", "job_title", "jobtitle", "position", "role"],
   DESCRIPTION: [
     "description",
     "desc",

@@ -110,12 +110,6 @@ export const systemFields: SystemField[] = [
     required: false,
   },
   {
-    id: "HEADLINE",
-    name: "Headline",
-    validatorType: "TEXT",
-    required: false,
-  },
-  {
     id: "DESCRIPTION",
     name: "Description",
     validatorType: "TEXT",
