@@ -58,6 +58,12 @@ class ApiClient {
           return config;
         }
 
+        // Don't overwrite if already set (e.g. retry after refresh with fresh token).
+        // Cookie may not be visible yet in same tick/server context, so preserve explicit header.
+        if (config.headers?.Authorization) {
+          return config;
+        }
+
         const token = await TokenStorage.getAccessToken();
 
         if (token) {
