@@ -13,13 +13,13 @@ import { useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  SlidePanel,
+  SlidePanelContent,
+  SlidePanelDescription,
+  SlidePanelFooter,
+  SlidePanelHeader,
+  SlidePanelTitle,
+} from "@/ui/slide-panel";
 
 import { DASHBOARD_ROUTES } from "@/config/app-route";
 
@@ -89,28 +89,31 @@ export function FileUploadDialog() {
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && closeDialog()}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+    <SlidePanel open={isOpen} onOpenChange={(open) => !open && closeDialog()}>
+      <SlidePanelContent
+        side="right"
+        className="sm:max-w-2xl w-full max-h-dvh overflow-hidden flex flex-col gap-0"
+      >
+        <SlidePanelHeader>
+          <SlidePanelTitle className="flex items-center gap-2">
             <FileSpreadsheet className="h-5 w-5 text-primary" />
             {step === "upload" && "Upload Your File"}
             {step === "mapping" && "Map Your Columns"}
-          </DialogTitle>
-          <DialogDescription>
+          </SlidePanelTitle>
+          <SlidePanelDescription>
             {step === "upload" &&
               "Upload a CSV or Excel file containing your leads data"}
             {step === "mapping" &&
               "Match your file columns to the system fields and review the data below"}
-          </DialogDescription>
+          </SlidePanelDescription>
           {selectedPreset && (
             <Badge variant="secondary" className="mt-2 w-fit">
               Workflow: {selectedPreset.label}
             </Badge>
           )}
-        </DialogHeader>
+        </SlidePanelHeader>
 
-        <div className="flex-1 overflow-y-auto py-4">
+        <div className="flex-1 overflow-y-auto py-4 px-4">
           {step === "upload" && (
             <FileDropZone
               isDragOver={isDragOver}
@@ -143,7 +146,7 @@ export function FileUploadDialog() {
           )}
         </div>
 
-        <DialogFooter className="gap-2">
+        <SlidePanelFooter className="gap-2 sm:flex-row flex-wrap sm:justify-end">
           {step !== "upload" && (
             <Button
               variant="outline"
@@ -194,8 +197,8 @@ export function FileUploadDialog() {
               </Button>
             </>
           )}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SlidePanelFooter>
+      </SlidePanelContent>
+    </SlidePanel>
   );
 }
