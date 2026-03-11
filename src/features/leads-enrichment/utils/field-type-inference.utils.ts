@@ -30,7 +30,7 @@ export function inferValidatorType(
     return "URL";
   }
   if (
-    nameLower.includes("count") ||
+    /\bcount\b/.test(nameLower) ||
     nameLower.includes("amount") ||
     nameLower.includes("quantity") ||
     nameLower.includes("size") ||
